@@ -10,13 +10,13 @@ ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 def nb_calc_simultaneous_conjugate_match(
     s11=None, s22=None, s21=None, s12=None, title="", Z0=Z(50 + 0j)
 ):
+    """Simultanueous Conjugate Match from Transistor S-Paramters."""
     for p in (s11, s22, s21, s12):
         if not isinstance(p, S):
             raise TypeError("All inputs must be type S Complex number instances")
 
     cj = calc_simultaneous_conjugate_match(s11=s11, s22=s22, s21=s21, s12=s12)
 
-    """Simultanueous Conjugate Match from Transistor S-Paramters."""
     cols = 3
     html = f"<hr><h3>{title}</h3>"
     html += "<table>"
@@ -32,10 +32,10 @@ def nb_calc_simultaneous_conjugate_match(
     html += f"<tr><td>$D_S$<td>{Ds}</td>"
 
     K = cj["K"]
-    check = "FAILED"  # X
+    check = "✗"
     check_color = "red"
     if K > 1:
-        check = "PASSED OK"
+        check = "✓"
         check_color = "green"
     html += f'<tr><td>Rollett $K$<td style="color: {check_color};">{K:.3f}<td style="text-align:left; color: {check_color};">{check}</td>'
     if K <= 1:
