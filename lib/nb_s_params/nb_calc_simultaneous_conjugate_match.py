@@ -56,7 +56,6 @@ def nb_calc_simultaneous_conjugate_match(
     gammaS = cj["gammaS"]
     html += f'<tr style="border: 1px solid #b3b2b2"><td>$\Gamma_S$<td>{gammaS}</td>'
     ZS = Z0 * (1 + gammaS) / (1 - gammaS)
-    print(ZS.c)
     html += f"<tr><td>$Z_S$<td>{ZS}<td>$Z_0$ = {Z0}</td>"
     YS = Y(1 / ZS.c)
     html += f"<tr><td>$Y_S$<td>{YS}</td>"
