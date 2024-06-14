@@ -52,13 +52,13 @@ def nb_calc_simultaneous_conjugate_match(
     html += f"<tr><td>yr<td>{yr}"
 
     html += f'<tr><th colspan="2" style="text-align:left;">Stability Factor:'
-    html += f'<tr><td>Linvill - $C$<td style="color: {check_color};">{C:.4f}<td style="text-align:left; color: {check_color};">{check}'
+    html += f'<tr><td>Linvill $C$<td style="color: {check_color};">{C:.4f}<td style="text-align:left; color: {check_color};">{check}'
 
     if C < 1:
         # MAG
         mag_db = cj["maximum_available_gain_db"]
-        html += f'<tr><th colspan="2" style="text-align:left;">Maximum Available:'
-        html += f"<tr><td>$dB$<td>{(mag_db * ureg.decibel):.3~#P}"
+        html += f'<tr><th colspan="2" style="text-align:left;">Maximum Available Gain:'
+        html += f"<tr><td>MAG $dB$<td>{(mag_db * ureg.decibel):.3~#P}"
 
         # Simultaneous Conjugate Match:-
 
