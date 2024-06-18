@@ -1,4 +1,9 @@
 import pint
+import skrf
+import skrf as rf
+from matplotlib import pyplot as plt
+from matplotlib import style
+from skrf import Network, plotting
 from IPython.display import HTML, display
 
 from ycx_complex_numbers import Complex, S, Y, Z
@@ -73,3 +78,11 @@ def nb_calc_simultaneous_conjugate_match(
 
     html += "</table>"
     display(HTML(html))
+
+    # plt.ioff()
+    fig = plt.figure(figsize=(12, 8))
+    ax1 = fig.add_subplot(111)
+    with style.context("seaborn-v0_8-ticks"):
+        plotting.plot_smith([(0+0j), gammaS.c], label="$\Gamma_S$", marker="x", lw=1, color="blue", show_legend=True, ax=ax1, draw_labels=True)
+        plotting.plot_smith([(0+0j), gammaL.c], label="$\Gamma_L$", marker="x", lw=1, color="green", show_legend=True, ax=ax1)
+        plt.show()
