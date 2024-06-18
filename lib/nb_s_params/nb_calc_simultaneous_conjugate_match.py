@@ -80,7 +80,7 @@ def nb_calc_simultaneous_conjugate_match(
     display(HTML(html))
 
     # plt.ioff()
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(6, 6))
     ax1 = fig.add_subplot(111)
     with style.context("seaborn-v0_8-ticks"):
         plotting.plot_smith([(0+0j), gammaS.c], label="$\Gamma_S$", marker="x", lw=1, color="blue", show_legend=True, ax=ax1, draw_labels=True)
