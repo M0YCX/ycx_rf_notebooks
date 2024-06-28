@@ -86,3 +86,5 @@ def nb_calc_simultaneous_conjugate_match(
         plotting.plot_smith([(0+0j), gammaS.c], label="$\Gamma_S$", marker="x", lw=1, color="blue", show_legend=True, ax=ax1, draw_labels=True)
         plotting.plot_smith([(0+0j), gammaL.c], label="$\Gamma_L$", marker="x", lw=1, color="green", show_legend=True, ax=ax1)
         plt.show()
+
+    return cj

@@ -99,3 +99,5 @@ def nb_calc_simultaneous_conjugate_match(
 
     html += "</table>"
     display(HTML(html))
+
+    return cj
