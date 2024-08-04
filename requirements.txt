@@ -6,5 +6,7 @@ ziamath
 schemdraw
 eseries
 black
+plotly
+ipywidgets
 ycx_complex_numbers @ git+https://github.com/M0YCX/ycx_complex_numbers.git
 ycx_rf_amplifiers @ git+https://github.com/M0YCX/ycx_rf_amplifiers.git
