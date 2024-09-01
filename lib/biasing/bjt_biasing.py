@@ -33,6 +33,7 @@ def draw_bjt_bias(
     R5=100.0,
     Beta=100.0,
     Vdelta=0.65,
+    config="ce", # ce/cb/cc
 ):
     Ie = Ib = Ibias = 0.0
     Vb = Vc = Vtc = Ve = 0.0
@@ -72,6 +73,18 @@ def draw_bjt_bias(
     d += e.Dot().label(
         f"$V_b$\n{(Vb * ureg.volts):.3f~#P}\n{vb_alert}", loc="left", color="red"
     )
+    if config in ("ce", "cc"):
+        d.push()
+        d += e.Capacitor().color("lightgrey").left().length(3.5)
+        d += e.Dot(open=True).color("lightgrey").label("i/p", loc="left")
+        d.pop()
+    elif config == "cb":
+        d.push()
+        d += e.Line().color("lightgrey").left().length(1)
+        d += e.Capacitor().color("lightgrey").left().length(2)
+        d += e.Line().down().color("lightgrey").length(1)
+        d += e.GroundChassis().color("lightgrey")
+        d.pop()
     d.push()
     d += e.Resistor().label(f"$R_1$\n{(R1 * ureg.ohms):.1f~#P}", color="blue")
     d += e.Line().length(1).right()
@@ -122,6 +135,11 @@ def draw_bjt_bias(
     d += e.Dot(open=True).label(
         "$V_c$" + f"\n{(Vc * ureg.volts):.3f~#P}", loc="right", color="red"
     )
+    if config in ("ce", "cb"):
+        d.push()
+        d += e.Capacitor().color("lightgrey").right().length(3.5)
+        d += e.Dot(open=True).color("lightgrey").label("o/p", loc="right")
+        d.pop()
 
     d += e.Line().length(0.25).down().at(TR1.emitter)
     d += e.Dot()
@@ -139,12 +157,25 @@ def draw_bjt_bias(
     d += e.Dot(open=True).label(
         f"$V_e$\n{(Ve * ureg.volts):.3f~#P}", loc="right", color="red"
     )
+    if config in ("cc"):
+        d.push()
+        d += e.Capacitor().color("lightgrey").right().length(3.5)
+        d += e.Dot(open=True).color("lightgrey").label("o/p", loc="right")
+        d.pop()
     d.pop()
     d += (
         e.Arrow()
         .label(f"$I_e$\n{(Ie * ureg.ampere):.3f~#P}", loc="bot", color="red")
         .length(1)
     )
+    if config == "cb":
+        d.push()
+        d += e.Dot().color("lightgrey")
+        d += e.Line().color("lightgrey").left().length(2)
+        d += e.Line().color("lightgrey").down().length(3)
+        d += e.Capacitor().color("lightgrey").left().length(4)
+        d += e.Dot(open=True).color("lightgrey").label("i/p", loc="left")
+        d.pop()
     d += (
         e.Resistor()
         .down()
@@ -229,6 +260,13 @@ interactive_draw_bjt_bias = interactive(
     Vdelta=widgets.FloatText(
         value=0.65,
         description="$\\Delta V$",
+        style=style,
+    ),
+    config=widgets.Select(
+        description="Amp Config",
+        options=["ce", "cb", "cc"],
+        value="ce",
+        rows=3,
         style=style,
     ),
 )
