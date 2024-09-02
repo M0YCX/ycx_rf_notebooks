@@ -3,8 +3,10 @@ import sys
 
 from IPython.display import display
 import ipywidgets as widgets
+
 # import numpy as np
 import pint
+
 # import plotly.graph_objects as go
 import plotly.io as pio
 import schemdraw as schem
@@ -33,7 +35,7 @@ def draw_bjt_bias(
     R5=100.0,
     Beta=100.0,
     Vdelta=0.65,
-    config="ce", # ce/cb/cc
+    config="ce",  # ce/cb/cc
 ):
     Ie = Ib = Ibias = 0.0
     Vb = Vc = Vtc = Ve = 0.0
@@ -66,8 +68,15 @@ def draw_bjt_bias(
 
     d = schem.Drawing()
 
-    d += e.GroundChassis().label(
-        "$I_{bias}$" + f"\n{(Ibias * ureg.ampere):.3f~#P}", color="red", loc="bot"
+    d += e.GroundChassis()
+    d += (
+        e.Arrow()
+        .reverse()
+        .length(0.5)
+        .up()
+        .label(
+            "$I_{bias}$" + f"\n{(Ibias * ureg.ampere):.3f~#P}", color="red", loc="top"
+        )
     )
     d += e.Resistor().label(f"$R_2$\n{(R2 * ureg.ohms):.1f~#P}", color="blue").up()
     d += e.Dot().label(
@@ -80,7 +89,7 @@ def draw_bjt_bias(
         d.pop()
     elif config == "cb":
         d.push()
-        d += e.Line().color("lightgrey").left().length(1)
+        d += e.Line().color("lightgrey").left().length(0.5)
         d += e.Capacitor().color("lightgrey").left().length(2)
         d += e.Line().down().color("lightgrey").length(1)
         d += e.GroundChassis().color("lightgrey")
@@ -125,6 +134,16 @@ def draw_bjt_bias(
         vsymb = "+"
     elif trans_type == "pnp":
         vsymb = "-"
+    d += (
+        e.Arrow()
+        .reverse()
+        .length(0.25)
+        .up()
+        .label(
+            f"$I_{{supply}}$={(Isupply * ureg.ampere):.3f~#P}", color="red", loc="bot"
+        )
+    )
+    d += e.Line().length(0.5)
     d += e.Dot(open=True).label(
         "$" + vsymb + "V_{cc}$" + f"\n{(Vcc * ureg.volts):.1f~#P}", color="blue"
     )
@@ -171,15 +190,15 @@ def draw_bjt_bias(
     if config == "cb":
         d.push()
         d += e.Dot().color("lightgrey")
-        d += e.Line().color("lightgrey").left().length(2)
+        d += e.Line().color("lightgrey").left().length(1.5)
         d += e.Line().color("lightgrey").down().length(3)
-        d += e.Capacitor().color("lightgrey").left().length(4)
+        d += e.Capacitor().color("lightgrey").left().length(5)
         d += e.Dot(open=True).color("lightgrey").label("i/p", loc="left")
         d.pop()
     d += (
         e.Resistor()
         .down()
-        .label(f"$R_3$\n{(R3 * ureg.ohms):.1f~#P}", color="blue")
+        .label(f"$R_3$\n{(R3 * ureg.ohms):.1f~#P}", color="blue", loc="bot")
         .length(2)
     )
     d += e.GroundChassis()
@@ -189,7 +208,7 @@ def draw_bjt_bias(
         .down()
         .length(3)
         .label(
-            f"$I_{{supply}}$={(Isupply * ureg.ampere):.3f~#P}\n- - -\nCollector Dissipation={(Pcd * ureg.watts):.3f~#P}",
+            f"- - -\nCollector Dissipation={(Pcd * ureg.watts):.3f~#P}",
             color="red",
             loc="bot",
         )
