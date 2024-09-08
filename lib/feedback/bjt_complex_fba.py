@@ -110,10 +110,18 @@ def complex_fba(
     )
     Gt_db = 10 * math.log10(Gt)
 
+    # Calc input reflection coefficient & return loss
+    GammaIn = (zin-ZS) / (zin+ZS)
+    InRetLoss = -20*math.log10(abs(GammaIn))
+
+    # Calc output reflection coefficient & return loss
+    GammaOut = (zout-ZS) / (zout+ZS)
+    OutRetLoss = -20*math.log10(abs(GammaOut))
+
     d = schem.Drawing()
     d.push()
     d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").down().length(2)
-    d += e.GroundChassis().label("${Z_{in}$" + f"\n{zin:.3f~S}", loc="bot", color="red")
+    d += e.GroundChassis().label("${Z_{in}$" + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}", loc="bot", color="red")
     d.pop()
     d += e.Line().right().length(2)
     d += e.Dot(open=True).label("b", color="grey", loc="bot")
@@ -218,7 +226,7 @@ def complex_fba(
         .right()
         .label(f"{N:.1f}:1\n$Z${N**2}:1", color="blue")
         .label(
-            "${Z_{out}$" + f"\n{zout:.3f~S}",
+            "${Z_{out}$" + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
             loc="right",
             color="red",
         )
