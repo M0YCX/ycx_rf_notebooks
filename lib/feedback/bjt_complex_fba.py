@@ -82,6 +82,7 @@ def complex_fba(
     # output transformer N:1 as ABCD for cascade below
     ATR1 = NetABCD(A=N, B=0, C=0, D=1 / N)
 
+    # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
     y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
     y12e = Y(0 - (jw * Ccb))
     y21e = Y(beta / (Ze * (beta + 1)) - (jw * Ccb))
@@ -121,6 +122,7 @@ def complex_fba(
     d = schem.Drawing()
     d.push()
     d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").down().length(2)
+    d += e.SourceSin().down().length(2)
     d += e.GroundChassis().label("${Z_{in}$" + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}", loc="bot", color="red")
     d.pop()
     d += e.Line().right().length(2)
