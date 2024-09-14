@@ -39,6 +39,7 @@ def cb_model(
     Ie_mA=10,
     Rbp=10.0,
     Ccb_pF=5,
+    VA=80,
     ZS_real=50,
     ZS_imag=0,
     ZL_real=50,
@@ -58,6 +59,8 @@ def cb_model(
 
     YS = 1 / ZS
     YL = 1 / ZL
+
+    RO = VA/Ie
 
     # Model the transistor's **intrinsic** elements first as a common-emitter, then use a conversion to common-base
     beta = Complex(B0 / (1 + (1j * B0 * F) / FT))
@@ -88,10 +91,14 @@ def cb_model(
 
     # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
     # e.g. Ye = Ytrans + Yccb
-    y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
-    y12e = Y(0 - (jw * Ccb))
-    y21e = Y(beta / (Ze * (beta + 1)) - (jw * Ccb))
-    y22e = Y(0 + (jw * Ccb))
+    # y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
+    # y12e = Y(0 - (jw * Ccb))
+    # y21e = Y(beta / (Ze * (beta + 1)) - (jw * Ccb))
+    # y22e = Y(0 + (jw * Ccb))
+    y11e = Y(1 / (Ze * (beta + 1)) + 1/RO + (jw * Ccb))
+    y12e = Y(-1/RO - (jw * Ccb))
+    y21e = Y(beta / (Ze * (beta + 1)) - 1/RO - (jw * Ccb))
+    y22e = Y(1/RO + (jw * Ccb))
     Ye = NetY(y11=y11e, y12=y12e, y21=y21e, y22=y22e)
 
     # Cascade the base spreading resistance to the hybrid-pi amplifier
@@ -228,15 +235,22 @@ def cb_model(
     )
     d += e.Dot()
     d.pop()
+    d += e.Line(ls="dashed").right().length(2)
+    d += e.Dot()
+    d.push()
+    d += e.Resistor().label(f"$R_O$\n{(RO * ureg.ohms):.1f~#P}", color="red", loc="bot").down()
+    d += e.Line(ls="dashed").left().length(2)
+    d += e.Dot()
+    d.pop()
     d += e.Line(ls="dashed").right().length(1)
     d += e.Dot(open=True).label("c", color="grey", loc="top")
     d += e.Line().length(2)
     d += e.Dot()
     d.push()
-    d += e.Resistor().label(f"$R_C$\n{(RC * ureg.ohms):.1f~#P}", color="blue").down()
+    d += e.Resistor().label(f"$R_C$\n{(RC * ureg.ohms):.1f~#P}", color="blue", loc="bot").down()
     d += e.GroundChassis()
     d.pop()
-    d += e.Line().length(2)
+    d += e.Line().length(3)
 
     d += e.Line().down().length(1)
     d += (
@@ -315,6 +329,12 @@ interactive_cb_model = interactive(
     Ccb_pF=widgets.FloatText(
         value=5.0,
         description="$C_{cb}$ pF",
+        style=style,
+        # layout=layout,
+    ),
+    VA=widgets.FloatText(
+        value=80.0,
+        description="$V_A$ Early Voltage",
         style=style,
         # layout=layout,
     ),
