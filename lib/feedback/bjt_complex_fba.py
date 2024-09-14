@@ -47,7 +47,7 @@ def complex_fba(
     ZS_imag=0,
     ZL_real=50,
     ZL_imag=0,
-    N=2.0,
+    N=2,
 ):
     Ccb = Ccb_pF * 10**-12
     Le = Le_nH * 10**-9
@@ -224,17 +224,26 @@ def complex_fba(
     d += e.Line().right().length(6)
     d += e.Line().down().length(1)
     d += (
-        TR1 := e.Transformer()
+        TR1 := e.Transformer(t1=N, t2=1)
         .right()
-        .label(f"{N:.1f}:1\n$Z${N**2}:1", color="blue")
-        .label(
-            "${Z_{out}$" + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
-            loc="right",
-            color="red",
-        )
+        .label(f"{N}t:1\n$z${N**2}:1", color="blue")
         .flip()
     )
-
+    d.push()
+    d += e.Gap().up().length(1)
+    d += (
+        e.Gap()
+        .right()
+        .length(1)
+        .label(
+            "${Z_{out}$"
+            + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
+            loc="right",
+            halign="left",
+            color="red",
+        )
+    )
+    d.pop()
     d += e.Line().at(TR1.p1).length(0.5)
     d += e.GroundChassis()
 
@@ -356,11 +365,11 @@ interactive_complex_fba = interactive(
         style=style,
         # layout=layout,
     ),
-    N=widgets.FloatSlider(
-        value=2.0,
+    N=widgets.IntSlider(
+        value=2,
         description="$N$",
-        min=1.0,
-        max=10.0,
+        min=1,
+        max=10,
         style=style,
         layout=layout,
     ),

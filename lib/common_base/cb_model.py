@@ -243,12 +243,6 @@ def cb_model(
         TRout := e.Transformer(t1=int(Nout), t2=1)
         .right()
         .label(f"{Nout}t:1\n$z${Nout**2}:1", color="blue")
-        # .label(
-        #     "${Z_{out}$"
-        #     + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
-        #     loc="right",
-        #     color="red",
-        # )
         .flip()
     )
     d.push()
