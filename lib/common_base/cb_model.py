@@ -138,20 +138,46 @@ def cb_model(
     d += e.SourceSin().label("$V_{in}$", loc="top").up().length(2)
     d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").up().length(2)
 
-    d += e.Line().right().length(5)
+    d += e.Line().right().length(6)
 
     d += (
         TRin := e.Transformer(t1=int(Nin), t2=1)
         .right()
-        .label(f"{Nin:.1f}:1\n$Z${Nin**2}:1", color="blue")
+        .label(f"{Nin}:1t\n$z${Nin**2}:1", color="blue")
+        # .label(
+        #     "${Z_{in}$"
+        #     + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}",
+        #     loc="left",
+        #     color="red",
+        # )
+        .flip()
+    )
+    d.push()
+    d += (
+        e.Gap()
+        .down()
+        .length(1)
+        # .label(
+        #     "${Z_{in}$"
+        #     + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}",
+        #     loc="left",
+        #     halign="right",
+        #     color="red",
+        # )
+    )
+    d += (
+        e.Gap()
+        .left()
+        .length(0.15)
         .label(
             "${Z_{in}$"
             + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}",
             loc="left",
+            halign="right",
             color="red",
         )
-        .flip()
     )
+    d.pop()
     d += e.Line().at(TRin.p1).length(0.5).down()
     d += e.GroundChassis()
 
@@ -216,16 +242,30 @@ def cb_model(
     d += (
         TRout := e.Transformer(t1=int(Nout), t2=1)
         .right()
-        .label(f"{Nout:.1f}:1\n$Z${Nout**2}:1", color="blue")
+        .label(f"{Nout}t:1\n$z${Nout**2}:1", color="blue")
+        # .label(
+        #     "${Z_{out}$"
+        #     + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
+        #     loc="right",
+        #     color="red",
+        # )
+        .flip()
+    )
+    d.push()
+    d += e.Gap().up().length(1)
+    d += (
+        e.Gap()
+        .right()
+        .length(1)
         .label(
             "${Z_{out}$"
             + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
             loc="right",
+            halign="left",
             color="red",
         )
-        .flip()
     )
-
+    d.pop()
     d += e.Line().at(TRout.p1).length(0.5)
     d += e.GroundChassis()
 
