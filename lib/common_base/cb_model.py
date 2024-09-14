@@ -240,7 +240,11 @@ def cb_model(
     d.push()
     d += e.Resistor().label(f"$R_O$\n{(RO * ureg.ohms):.1f~#P}", color="red", loc="bot").down()
     d += e.Line(ls="dashed").left().length(2)
-    d += e.Dot()
+    d += e.Dot().label(
+        f"\n$\\beta$={beta:.1f}\n$\\alpha$={alpha:.2f}",
+        color="red",
+        loc="bottom",
+    )
     d.pop()
     d += e.Line(ls="dashed").right().length(1)
     d += e.Dot(open=True).label("c", color="grey", loc="top")
