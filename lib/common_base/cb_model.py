@@ -120,6 +120,7 @@ def cb_model(
     # Cascade:-
     Y1 = (ATRin * YRE.to_ABCD() * Y1.to_ABCD() * YRC.to_ABCD() * ATRout).to_Y()
     # print(f"Y cascaded={Y1}")
+    S1 = Y1.to_S()
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
     zin = Z(1 / yio["Yin"])
@@ -294,6 +295,9 @@ def cb_model(
     )
 
     display(d)
+
+    print(f"Y:{Y1}")
+    print(f"S:{S1}")
     return d
 
 
