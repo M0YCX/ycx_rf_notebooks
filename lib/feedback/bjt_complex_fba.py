@@ -177,6 +177,7 @@ def complex_fba(
         N=N,
     )
 
+    schem.config(inches_per_unit=0.4, fontsize=10)
     d = schem.Drawing()
     d.push()
     d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").down().length(2)
@@ -336,7 +337,7 @@ def complex_fba(
     display(d)
 
     fba_res = {}
-    for f in np.logspace(3, 9, num=100):
+    for f in np.logspace(3, math.log10(FT), num=100):
         fba = _calc_complex_fba(
             ZS=ZS,
             ZL=ZL,
@@ -369,6 +370,7 @@ def complex_fba(
             "I/P Return Loss dB",
             "O/P Return Loss dB",
         ),
+        x_title='Frequency',
     )
 
     fig.add_trace(
@@ -395,7 +397,7 @@ def complex_fba(
 
     # TODO: Add stability test(s) plot(s)
 
-    fig.update_layout(height=350, width=1400, title_text="Modeled Characteristics")
+    fig.update_layout(height=350, width=1400, title_text="Modeled Characteristics") #, xaxis=dict(title="Frequency")) #, xaxis_title="Frequency")
     fig.update_xaxes(type="log")
     fig.show()
 
