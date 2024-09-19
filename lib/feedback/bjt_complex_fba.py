@@ -45,8 +45,8 @@ def _calc_complex_fba(
     Cf=None,
     N=None,
 ):
-    YS = 1 / ZS
-    YL = 1 / ZL
+    YS = Y(1 / ZS)
+    YL = Y(1 / ZL)
 
     beta = Complex(B0 / (1 + (1j * B0 * F) / FT))
 
@@ -78,12 +78,12 @@ def _calc_complex_fba(
     A1 = Rbp_A * Ae
 
     # Add feedback in parallel
-    Y1 = A1.to_Y() + Yf
+    Yt = A1.to_Y() + Yf
 
     # Get interim output impedance to match Wes's Zout
-    izout = Z(1 / Y1.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
+    izout = Z(1 / Yt.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
 
-    Y1 = (Y1.to_ABCD() * ATR1).to_Y()
+    Y1 = (Yt.to_ABCD() * ATR1).to_Y()
     S1 = Y1.to_S()
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
@@ -105,17 +105,19 @@ def _calc_complex_fba(
     OutRetLoss = -20 * math.log10(abs(GammaOut))
 
     # Calc Linvill stability
-    linvillC = calc_linvill_stability2(y11=Y1.y11, y12=Y1.y12, y21=Y1.y21, y22=Y1.y22)
+    linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
 
     # Calc Stern stability
+    # fmt:off
     sternK = calc_stern_stability2(
-        y11=Y1.y11,
-        y12=Y1.y12,
-        y21=Y1.y21,
-        y22=Y1.y22,
+        y11=Yt.y11,
+        y12=Yt.y12,
+        y21=Yt.y21,
+        y22=Yt.y22,
         GS=1 / (ZS.real),
-        GL=1 / (ZL.real),
+        GL=1 / (ZL.real), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Yt...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Yt
     )
+    # fmt:on
 
     return {
         "F": F,
@@ -191,12 +193,17 @@ def complex_fba(
     d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").down().length(2)
     d.push()
 
-    d += e.Gap().right().length(10).label(
-        "${Z_{in}$"
-        + f"\n{fba['zin']:.3f~S}\nReturn Loss={(fba['InRetLoss'] * ureg.decibel):.3f~#P}",
-        halign="right",
-        loc="top",
-        color="red",
+    d += (
+        e.Gap()
+        .right()
+        .length(10)
+        .label(
+            "${Z_{in}$"
+            + f"\n{fba['zin']:.3f~S}\nReturn Loss={(fba['InRetLoss'] * ureg.decibel):.3f~#P}",
+            halign="right",
+            loc="top",
+            color="red",
+        )
     )
 
     d.pop()
@@ -313,7 +320,7 @@ def complex_fba(
     d += (
         TR1 := e.Transformer(t1=N, t2=1)
         .right()
-        .label(f"{N}t:1\n$z${N**2}:1", color="blue")
+        .label(f"ideal\n{N}t:1\n$z${N**2}:1", color="blue")
         .flip()
     )
     d.push()
@@ -385,7 +392,7 @@ def complex_fba(
             "I/P Return Loss dB",
             "O/P Return Loss dB",
             "Linvill Stability [>0 & <1]",
-            "Stern Stability [>1]",
+            #"Stern Stability [>1]",
         ),
         x_title="Frequency",
     )
@@ -417,20 +424,20 @@ def complex_fba(
         row=2,
         col=1,
     )
-    ss = fig.add_trace(
-        go.Scatter(x=fba_res["F"], y=fba_res["sternK"], name="Stern Stability"),
-        row=2,
-        col=2,
-    )
+    # TODO: Disabled until ZL seen through the transformer is resolved above...
+    # fig.add_trace(
+    #     go.Scatter(x=fba_res["F"], y=fba_res["sternK"], name="Stern Stability"),
+    #     row=2,
+    #     col=2,
+    # )
     fig.add_vline(
         x=F,
         line_width=1,
         line_dash="dash",
         line_color="red",
-        # annotation_text="F",  # <<< doesnt work ???
     )
 
-    fig.update_layout(height=500, width=1400) #, title_text="Modeled Characteristics")
+    fig.update_layout(height=500, width=1400)
     fig.update_xaxes(type="log")
     fig.show()
 
