@@ -17,6 +17,7 @@ from eseries import E12, E24, E48, E96, erange
 from IPython.display import display
 from ipywidgets import Layout, interactive, GridBox, interactive_output
 from ycx_complex_numbers import Complex, NetABCD, NetY, NetZ, Y, Z
+from ycx_rf_amplifiers.y_params import calc_linvill_stability2, calc_stern_stability2
 
 # %matplotlib inline
 # %config InlineBackend.figure_format = 'svg'
@@ -111,6 +112,20 @@ def _calc_complex_fba(
     # Calc output reflection coefficient & return loss
     GammaOut = (zout - ZS) / (zout + ZS)
     OutRetLoss = -20 * math.log10(abs(GammaOut))
+
+    # Calc Linvill stability
+    linvillC = calc_linvill_stability2(y11=Y1.y11, y12=Y1.y12, y21=Y1.y21, y22=Y1.y22)
+
+    # Calc Stern stability
+    sternK = calc_stern_stability2(
+        y11=Y1.y11,
+        y12=Y1.y12,
+        y21=Y1.y21,
+        y22=Y1.y22,
+        GS=1 / (ZS.real),
+        GL=1 / (ZL.real),
+    )
+
     return {
         "F": F,
         "Y": Y1,
@@ -127,6 +142,8 @@ def _calc_complex_fba(
         "Ze": Ze,
         "beta": beta,
         "beta_mag": abs(beta),
+        "linvillC": linvillC,
+        "sternK": sternK,
     }
 
 
@@ -362,15 +379,17 @@ def complex_fba(
     # print(fba_res)
 
     fig = make_subplots(
-        rows=1,
+        rows=2,
         cols=4,
         subplot_titles=(
             "|Beta|",
             "Gain dB",
             "I/P Return Loss dB",
             "O/P Return Loss dB",
+            "Linvill Stability [>0 & <1]",
+            "Stern Stability [>1]",
         ),
-        x_title='Frequency',
+        x_title="Frequency",
     )
 
     fig.add_trace(
@@ -395,9 +414,18 @@ def complex_fba(
         col=4,
     )
 
-    # TODO: Add stability test(s) plot(s)
+    fig.add_trace(
+        go.Scatter(x=fba_res["F"], y=fba_res["linvillC"], name="Linvill Stability"),
+        row=2,
+        col=1,
+    )
+    fig.add_trace(
+        go.Scatter(x=fba_res["F"], y=fba_res["sternK"], name="Stern Stability"),
+        row=2,
+        col=2,
+    )
 
-    fig.update_layout(height=350, width=1400, title_text="Modeled Characteristics") #, xaxis=dict(title="Frequency")) #, xaxis_title="Frequency")
+    fig.update_layout(height=500, width=1400, title_text="Modeled Characteristics")
     fig.update_xaxes(type="log")
     fig.show()
 
