@@ -189,13 +189,19 @@ def complex_fba(
     d = schem.Drawing()
     d.push()
     d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").down().length(2)
-    d += e.SourceSin().down().length(2)
-    d += e.GroundChassis().label(
+    d.push()
+
+    d += e.Gap().right().length(10).label(
         "${Z_{in}$"
         + f"\n{fba['zin']:.3f~S}\nReturn Loss={(fba['InRetLoss'] * ureg.decibel):.3f~#P}",
-        loc="bot",
+        halign="right",
+        loc="top",
         color="red",
     )
+
+    d.pop()
+    d += e.SourceSin().label("$V_{in}$", loc="top").down().length(2)
+    d += e.GroundChassis()
     d.pop()
     d += e.Line().right().length(2)
     d += e.Dot(open=True).label("b", color="grey", loc="bot")
@@ -411,13 +417,20 @@ def complex_fba(
         row=2,
         col=1,
     )
-    fig.add_trace(
+    ss = fig.add_trace(
         go.Scatter(x=fba_res["F"], y=fba_res["sternK"], name="Stern Stability"),
         row=2,
         col=2,
     )
+    fig.add_vline(
+        x=F,
+        line_width=1,
+        line_dash="dash",
+        line_color="red",
+        # annotation_text="F",  # <<< doesnt work ???
+    )
 
-    fig.update_layout(height=500, width=1400, title_text="Modeled Characteristics")
+    fig.update_layout(height=500, width=1400) #, title_text="Modeled Characteristics")
     fig.update_xaxes(type="log")
     fig.show()
 
@@ -525,7 +538,7 @@ ZL_imag = widgets.FloatText(
     layout=Layout(width="auto", grid_area="ZL_imag"),
 )
 N = widgets.IntSlider(
-    value=1,
+    value=2,
     description="$N$",
     min=1,
     max=20,
