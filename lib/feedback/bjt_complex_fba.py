@@ -1,13 +1,7 @@
 import math
-
-# import sys
-
 import ipywidgets as widgets
-
 import numpy as np
 import pint
-
-# import plotly.graph_objects as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
@@ -18,9 +12,6 @@ from IPython.display import display
 from ipywidgets import Layout, interactive, GridBox, interactive_output
 from ycx_complex_numbers import Complex, NetABCD, NetY, NetZ, Y, Z
 from ycx_rf_amplifiers.y_params import calc_linvill_stability2, calc_stern_stability2
-
-# %matplotlib inline
-# %config InlineBackend.figure_format = 'svg'
 
 
 # Support rendering plots in github
@@ -209,15 +200,17 @@ def complex_fba(
     d += e.Line().right().length(2)
     d += e.Dot(open=True).label("b", color="grey", loc="bot")
     d += (
-        e.Resistor(ls="dashed")
+        e.Resistor(color="grey")
         .right()
         .label(f"$R^`_b$\n{(Rbp * ureg.ohms):.1f~#P}", color="blue")
     )
-    d += e.Line().right().length(1.5)
-    d += e.Dot().label(f"$I_e$={(Ie * ureg.ampere):.1f~#P}", color="blue", loc="right")
+    d += e.Line(color="grey").right().length(1.5)
+    d += e.Dot(color="grey").label(
+        f"$I_e$={(Ie * ureg.ampere):.1f~#P}", color="blue", loc="right"
+    )
     d.push()
     d += (
-        e.Resistor(ls="dashed")
+        e.Resistor(color="grey")
         .label("$r_e$" + f"={(fba['re'] * ureg.ohms):.1f~#P}", color="red", loc="bot")
         .down()
         .length(2)
@@ -249,7 +242,7 @@ def complex_fba(
 
     d.pop()
     d += (
-        e.SourceI()
+        e.SourceI(color="grey")
         .length(2)
         .reverse()
         .label(
@@ -272,14 +265,14 @@ def complex_fba(
     )
     d.pop()
     d.push()
-    d += e.Line(ls="dashed").left().length(1)
+    d += e.Line(color="grey").left().length(1)
     d += (
-        e.Capacitor(ls="dashed")
+        e.Capacitor(color="grey")
         .length(2)
         .label("$C_{cb}$" + f"\n{(Ccb * ureg.farads):.1f~#P}", color="blue")
         .down()
     )
-    d += e.Dot()
+    d += e.Dot(color="grey")
 
     d.pop()
     d += e.Line().up().length(1)
@@ -376,7 +369,6 @@ def complex_fba(
             if f_k not in fba_res:
                 fba_res[f_k] = []
             fba_res[f_k].append(f_i)
-    # print(fba_res)
 
     fig = make_subplots(
         rows=2,
@@ -571,8 +563,6 @@ g1 = GridBox(
             "Rf Rf ZS_real ZS_imag"
             "ZL_real ZL_imag N N"
             """,
-        # "main main . sidebar "
-        # "footer footer footer footer"
     ),
 )
 
