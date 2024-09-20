@@ -10,7 +10,7 @@ import schemdraw.elements as e
 from eseries import E12, E24, E48, E96, erange
 from IPython.display import display
 from ipywidgets import Layout, interactive, GridBox, interactive_output
-from ycx_complex_numbers import Complex, NetABCD, NetY, NetZ, Y, Z
+from ycx_complex_numbers import Complex, Neta, NetY, NetZ, Y, Z
 from ycx_rf_amplifiers.y_params import calc_linvill_stability2, calc_stern_stability2
 
 
@@ -53,7 +53,7 @@ def _calc_complex_fba(
     jw = 1j * 2 * math.pi * F
 
     # base spreading resistor as ABCD matrix for cascading below
-    Rbp_A = NetABCD(A=1, B=Rbp, C=0, D=1)
+    Rbp_A = Neta(a11=1, a12=Rbp, a21=0, a22=1)
 
     # Emitter complex impedance
     re = 26 / Ie_mA
@@ -64,7 +64,7 @@ def _calc_complex_fba(
     Yf = NetY(y11=1 / Zf, y12=-1 / Zf, y21=-1 / Zf, y22=1 / Zf)
 
     # output transformer N:1 as ABCD for cascade below
-    ATR1 = NetABCD(A=N, B=0, C=0, D=1 / N)
+    ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
 
     # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
     y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
@@ -74,7 +74,7 @@ def _calc_complex_fba(
     Ye = NetY(y11=y11e, y12=y12e, y21=y21e, y22=y22e)
 
     # Cascade the base spreading resistance to the hybrid-pi amplifier
-    Ae = Ye.to_ABCD()
+    Ae = Ye.to_a()
     A1 = Rbp_A * Ae
 
     # Add feedback in parallel
@@ -83,7 +83,7 @@ def _calc_complex_fba(
     # Get interim output impedance to match Wes's Zout
     izout = Z(1 / Yt.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
 
-    Y1 = (Yt.to_ABCD() * ATR1).to_Y()
+    Y1 = (Yt.to_a() * ATR1).to_Y()
     S1 = Y1.to_S()
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
