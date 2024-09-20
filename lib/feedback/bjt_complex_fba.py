@@ -68,7 +68,12 @@ def _calc_complex_fba(
     Yf = NetY(y11=1 / Zf, y12=-1 / Zf, y21=-1 / Zf, y22=1 / Zf)
 
     # output transformer N:1 as ABCD for cascade below
-    ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
+    ATR1 = None
+    if N>0:
+        ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
+    else:
+        ATR1 = Neta(a11=1/N, a12=0, a21=0, a22=N)
+
 
     # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
     y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
@@ -336,10 +341,15 @@ def complex_fba(
     d.pop()
     d += e.Line().right().length(6)
     d += e.Line().down().length(1)
+    n1 = N
+    n2 = 1
+    if N < 0:
+        n1 = 1
+        n2 = abs(N)
     d += (
-        TR1 := e.Transformer(t1=N, t2=1)
+        TR1 := e.Transformer(t1=n1, t2=n2)
         .right()
-        .label(f"ideal\n{N}t:1\n$z${N**2}:1", color="blue")
+        .label(f"ideal\nt:{n1}:{n2}\nz:{n1**2}:{n2**2}", color="blue")
         .flip()
     )
     d.push()
@@ -580,11 +590,10 @@ ZL_imag = widgets.FloatText(
     style=style,
     layout=Layout(width="auto", grid_area="ZL_imag"),
 )
-N = widgets.IntSlider(
+N = widgets.SelectionSlider(
+    options=list(range(-20, -1)) + list(range(1, 21)),
     value=2,
     description="$N$",
-    min=1,
-    max=20,
     style=style,
     layout=Layout(width="auto", grid_area="N"),
     continuous_update=True,
