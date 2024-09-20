@@ -10,7 +10,7 @@ import schemdraw.elements as e
 from eseries import E12, E24, E48, E96, erange
 from IPython.display import display
 from ipywidgets import Layout, interactive, GridBox, interactive_output
-from ycx_complex_numbers import Complex, Neta, NetY, NetZ, Y, Z
+from ycx_complex_numbers import Complex, Neta, Netb, NetY, NetZ, Y, Z
 from ycx_rf_amplifiers.y_params import calc_linvill_stability2, calc_stern_stability2
 
 
@@ -47,6 +47,10 @@ def _calc_complex_fba(
 ):
     YS = Y(1 / ZS)
     YL = Y(1 / ZL)
+
+    # YL as a ABCD' matrix for reverse cascade through the output
+    # transformer to calc the Stern stability
+    YL_Ap = Netb(b11=1, b12=0, b21=-YL, b22=1)
 
     beta = Complex(B0 / (1 + (1j * B0 * F) / FT))
 
@@ -107,6 +111,15 @@ def _calc_complex_fba(
     # Calc Linvill stability
     linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
 
+    # Calc ZL as seen through the output transformer
+    TZL = (YL_Ap * ATR1.to_b()).to_Z()
+    # print(f"TZL={TZL}")
+    # TYL = TZL.to_Y()
+    # print(f"TYL={TYL}")
+
+    # ZATR1 = ATR1.to_Z().zin(ZL=ZL)  # as expected div by zero error...
+    # print(f"ZATR1={ZATR1}")
+
     # Calc Stern stability
     # fmt:off
     sternK = calc_stern_stability2(
@@ -115,7 +128,7 @@ def _calc_complex_fba(
         y21=Yt.y21,
         y22=Yt.y22,
         GS=1 / (ZS.real),
-        GL=1 / (ZL.real), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Yt...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Yt
+        GL=1 / (abs(TZL.z11.real)), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Yt...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Yt
     )
     # fmt:on
 
@@ -167,8 +180,8 @@ def complex_fba(
     Cf = Cf_pF * 10**-12
     Lf = Lf_nH * 10**-9
 
-    ZS = ZS_real + (1j * ZS_imag)
-    ZL = ZL_real + (1j * ZL_imag)
+    ZS = Z(ZS_real + (1j * ZS_imag))
+    ZL = Z(ZL_real + (1j * ZL_imag))
 
     fba = _calc_complex_fba(
         ZS=ZS,
@@ -189,8 +202,14 @@ def complex_fba(
 
     schem.config(inches_per_unit=0.4, fontsize=10)
     d = schem.Drawing()
+    d += e.Gap().right()  # make space on left for truncated ZS
     d.push()
-    d += e.Resistor().label("$Z_S$" + f"\n{ZS}", color="blue").down().length(2)
+    d += (
+        e.Resistor()
+        .label("$Z_S$" + f"\n{ZS.as_complex()}", color="blue")
+        .down()
+        .length(2)
+    )
     d.push()
 
     d += (
@@ -347,7 +366,7 @@ def complex_fba(
     d += e.Line().at(TR1.s2).right().length(5)
     d += (
         e.Resistor()
-        .label("$Z_L$" + f"\n{ZL}", loc="bot", color="blue")
+        .label("$Z_L$" + f"\n{ZL.as_complex()}", loc="bot", color="blue")
         .down()
         .length(2.1)
     )
@@ -356,11 +375,12 @@ def complex_fba(
         color="red",
         loc="bot",
     )
+    d += e.Gap().right()  # make space on right for truncated ZL
 
     display(d)
 
     fba_res = {}
-    for f in np.logspace(3, math.log10(FT), num=100):
+    for f in np.logspace(3, math.log10(FT), num=200):
         fba = _calc_complex_fba(
             ZS=ZS,
             ZL=ZL,
@@ -392,7 +412,7 @@ def complex_fba(
             "I/P Return Loss dB",
             "O/P Return Loss dB",
             "Linvill Stability [>0 & <1]",
-            #"Stern Stability [>1]",
+            "Stern Stability [>1]",
         ),
         x_title="Frequency",
     )
@@ -419,17 +439,33 @@ def complex_fba(
         col=4,
     )
 
+    colors = ["red" if v <= 0 or v >= 1 else "blue" for v in fba_res["linvillC"]]
     fig.add_trace(
-        go.Scatter(x=fba_res["F"], y=fba_res["linvillC"], name="Linvill Stability"),
+        go.Scatter(
+            x=fba_res["F"],
+            y=fba_res["linvillC"],
+            name="Linvill Stability",
+            mode="markers+lines",
+            marker={"color": colors, "size": 3},
+            line={"color": "grey"},
+        ),
         row=2,
         col=1,
     )
-    # TODO: Disabled until ZL seen through the transformer is resolved above...
-    # fig.add_trace(
-    #     go.Scatter(x=fba_res["F"], y=fba_res["sternK"], name="Stern Stability"),
-    #     row=2,
-    #     col=2,
-    # )
+
+    colors = ["red" if v <= 1 else "blue" for v in fba_res["sternK"]]
+    fig.add_trace(
+        go.Scatter(
+            x=fba_res["F"],
+            y=fba_res["sternK"],
+            name="Stern Stability",
+            mode="markers+lines",
+            marker={"color": colors, "size": 3},
+            line={"color": "grey"},
+        ),
+        row=2,
+        col=2,
+    )
     fig.add_vline(
         x=F,
         line_width=1,
