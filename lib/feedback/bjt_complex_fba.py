@@ -72,7 +72,7 @@ def _calc_complex_fba(
     if N>0:
         ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
     else:
-        ATR1 = Neta(a11=1/N, a12=0, a21=0, a22=N)
+        ATR1 = Neta(a11=1/abs(N), a12=0, a21=0, a22=abs(N))
 
 
     # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
