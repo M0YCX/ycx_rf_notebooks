@@ -67,10 +67,10 @@ class Node2P(e.Element):
         self.segments.append(SegmentText((xoff + 3 - 0.25, 1.5), label="p2"))
 
         self.segments.append(
-            SegmentText((xoff - 1.0 - 2.5, 1.5), label=inp, color="blue", fontsize=12)
+            SegmentText((xoff - 1.0 - 2.5, 1.0), label=inp, color="blue", fontsize=12)
         )
         self.segments.append(
-            SegmentText((xoff + 4.0 + 2.5, 1.5), label=outp, color="blue", fontsize=12)
+            SegmentText((xoff + 4.0 + 2.5, 1.0), label=outp, color="blue", fontsize=12)
         )
 
         # input
