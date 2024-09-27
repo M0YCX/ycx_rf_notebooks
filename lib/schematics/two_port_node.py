@@ -13,6 +13,8 @@ class Node2P(e.Element):
         x12="$x_{12}$",
         x21="$x_{21}$",
         x22="$x_{22}$",
+        inp="->",
+        outp="<-",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -63,6 +65,13 @@ class Node2P(e.Element):
         self.segments.append(SegmentText((xoff + 1.5, 1.5), label=name, color="blue"))
         self.segments.append(SegmentText((xoff + 0.25, 1.5), label="p1"))
         self.segments.append(SegmentText((xoff + 3 - 0.25, 1.5), label="p2"))
+
+        self.segments.append(
+            SegmentText((xoff - 1.0 - 2.5, 1.5), label=inp, color="blue", fontsize=12)
+        )
+        self.segments.append(
+            SegmentText((xoff + 4.0 + 2.5, 1.5), label=outp, color="blue", fontsize=12)
+        )
 
         # input
         self.segments.append(
