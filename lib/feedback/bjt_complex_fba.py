@@ -84,7 +84,7 @@ def _calc_complex_fba(
 
     # Cascade the base spreading resistance to the hybrid-pi amplifier
     Ae = Ye.to_a()
-    A1 = Rbp_A * Ae
+    A1 = Rbp_A @ Ae
 
     # Add feedback in parallel
     Yt = A1.to_Y() + Yf
@@ -92,7 +92,7 @@ def _calc_complex_fba(
     # Get interim output impedance to match Wes's Zout
     izout = Z(1 / Yt.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
 
-    Y1 = (Yt.to_a() * ATR1).to_Y()
+    Y1 = (Yt.to_a() @ ATR1).to_Y()
     S1 = Y1.to_S()
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
@@ -117,7 +117,7 @@ def _calc_complex_fba(
     linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
 
     # Calc ZL as seen through the output transformer
-    TZL = (YL_Ap * ATR1.to_b()).to_Z()
+    TZL = (YL_Ap @ ATR1.to_b()).to_Z()
     # print(f"TZL={TZL}")
     # TYL = TZL.to_Y()
     # print(f"TYL={TYL}")

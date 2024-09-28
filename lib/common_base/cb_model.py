@@ -14,7 +14,7 @@ import schemdraw.elements as e
 from eseries import E12, E24, E48, E96, erange
 from IPython.display import display
 from ipywidgets import Layout, interactive
-from ycx_complex_numbers import Complex, NetABCD, NetY, NetZ, Y, Z
+from ycx_complex_numbers import Complex, Neta, NetY, NetZ, Y, Z
 
 # %matplotlib inline
 # %config InlineBackend.figure_format = 'svg'
@@ -69,7 +69,7 @@ def cb_model(
     jw = 1j * 2 * math.pi * F
 
     # base spreading resistor as ABCD matrix for cascading below
-    Rbp_A = NetABCD(A=1, B=Rbp, C=0, D=1)
+    Rbp_A = Neta(a11=1, a12=Rbp, a21=0, a22=1)
 
     # Emitter complex impedance
     re = 26 / Ie_mA
@@ -86,8 +86,8 @@ def cb_model(
     )
 
     # input/output transformers N:1 as ABCD for cascade below
-    ATRin = NetABCD(A=Nin, B=0, C=0, D=1 / Nin)
-    ATRout = NetABCD(A=Nout, B=0, C=0, D=1 / Nout)
+    ATRin = Neta(a11=Nin, a12=0, a21=0, a22=1 / Nin)
+    ATRout = Neta(a11=Nout, a12=0, a21=0, a22=1 / Nout)
 
     # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
     # e.g. Ye = Ytrans + Yccb
@@ -102,14 +102,14 @@ def cb_model(
     Ye = NetY(y11=y11e, y12=y12e, y21=y21e, y22=y22e)
 
     # Cascade the base spreading resistance to the hybrid-pi amplifier
-    Ae = Ye.to_ABCD()
-    A1 = Rbp_A * Ae
+    Ae = Ye.to_a()
+    A1 = Rbp_A @ Ae
 
     Y1 = A1.to_Y()
 
     # Get interim output impedance
     # izout = Z(1 / Y1.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
-    # Y1 = (Y1.to_ABCD() * ATR1).to_Y()
+    # Y1 = (Y1.to_a() * ATR1).to_Y()
 
     # Y1 = Ye
 
@@ -118,7 +118,7 @@ def cb_model(
     # print(f"Y1={Y1}")
 
     # Cascade:-
-    Y1 = (ATRin * YRE.to_ABCD() * Y1.to_ABCD() * YRC.to_ABCD() * ATRout).to_Y()
+    Y1 = (ATRin @ YRE.to_a() @ Y1.to_a() @ YRC.to_a() @ ATRout).to_Y()
     # print(f"Y cascaded={Y1}")
     S1 = Y1.to_S()
 
