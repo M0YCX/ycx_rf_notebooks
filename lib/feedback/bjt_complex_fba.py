@@ -110,7 +110,7 @@ def _calc_complex_fba(
     InRetLoss = -20 * math.log10(abs(GammaIn))
 
     # Calc output reflection coefficient & return loss
-    GammaOut = (zout - ZS) / (zout + ZS)
+    GammaOut = (zout - ZL) / (zout + ZL)
     OutRetLoss = -20 * math.log10(abs(GammaOut))
 
     # Calc Linvill stability
