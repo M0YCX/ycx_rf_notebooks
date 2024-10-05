@@ -69,11 +69,10 @@ def _calc_complex_fba(
 
     # output transformer N:1 as ABCD for cascade below
     ATR1 = None
-    if N>0:
+    if N > 0:
         ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
     else:
-        ATR1 = Neta(a11=1/abs(N), a12=0, a21=0, a22=abs(N))
-
+        ATR1 = Neta(a11=1 / abs(N), a12=0, a21=0, a22=abs(N))
 
     # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
     y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
@@ -108,10 +107,12 @@ def _calc_complex_fba(
     # Calc input reflection coefficient & return loss
     GammaIn = (zin - ZS) / (zin + ZS)
     InRetLoss = -20 * math.log10(abs(GammaIn))
+    InVSWR = (1 + abs(GammaIn)) / (1 - abs(GammaIn))
 
     # Calc output reflection coefficient & return loss
     GammaOut = (zout - ZL) / (zout + ZL)
     OutRetLoss = -20 * math.log10(abs(GammaOut))
+    OutVSWR = (1 + abs(GammaOut)) / (1 - abs(GammaOut))
 
     # Calc Linvill stability
     linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
@@ -148,6 +149,8 @@ def _calc_complex_fba(
         "zout_mag": abs(zout),
         "InRetLoss": InRetLoss,
         "OutRetLoss": OutRetLoss,
+        "InVSWR": InVSWR,
+        "OutVSWR": OutVSWR,
         "Gt_db": Gt_db,
         "re": re,
         "Ze": Ze,
@@ -423,6 +426,8 @@ def complex_fba(
             "O/P Return Loss dB",
             "Linvill Stability [>0 & <1]",
             "Stern Stability [>1]",
+            "I/P VSWR",
+            "O/P VSWR",
         ),
         x_title="Frequency",
     )
@@ -476,6 +481,18 @@ def complex_fba(
         row=2,
         col=2,
     )
+
+    fig.add_trace(
+        go.Scatter(x=fba_res["F"], y=fba_res["InVSWR"], name="i/p VSWR"),
+        row=2,
+        col=3,
+    )
+    fig.add_trace(
+        go.Scatter(x=fba_res["F"], y=fba_res["OutVSWR"], name="o/p VSWR"),
+        row=2,
+        col=4,
+    )
+
     fig.add_vline(
         x=F,
         line_width=1,
@@ -485,6 +502,8 @@ def complex_fba(
 
     fig.update_layout(height=500, width=1400)
     fig.update_xaxes(type="log")
+    fig.update_yaxes(type="log", row=2, col=3)
+    fig.update_yaxes(type="log", row=2, col=4)
     fig.show()
 
     return d
