@@ -54,14 +54,16 @@ def _calc_complex_fba(
 
     beta = Complex(B0 / (1 + (1j * B0 * F) / FT))
 
-    jw = 1j * 2 * math.pi * F
+    w = 2 * math.pi * F
+    jw = 1j * w
 
     # base spreading resistor as ABCD matrix for cascading below
     Rbp_A = Neta(a11=1, a12=Rbp, a21=0, a22=1)
 
     # Emitter complex impedance
     re = 26 / Ie_mA
-    Ze = Z(re + Re + (jw * Le))
+    Ze = Z(re + Re + 1j * (w * Le))
+    # Ze = Z(re + Re + 1j * (w * Le - 1 / (w * 1000 * 10**-9))) # experiment with Ce
 
     # feedback network as an admittance for later adding in parallel
     Zf = Z(Rf + 1j * (2 * math.pi * F * Lf - 1 / (2 * math.pi * F * Cf)))
@@ -115,7 +117,8 @@ def _calc_complex_fba(
     OutVSWR = (1 + abs(GammaOut)) / (1 - abs(GammaOut))
 
     # Calc Linvill stability
-    linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
+    # linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
+    linvillC = calc_linvill_stability2(y11=Y1.y11, y12=Y1.y12, y21=Y1.y21, y22=Y1.y22)
 
     # Calc ZL as seen through the output transformer
     TZL = (YL_Ap @ ATR1.to_b()).to_Z()
@@ -128,15 +131,23 @@ def _calc_complex_fba(
 
     # Calc Stern stability
     # fmt:off
-    sternK = calc_stern_stability2(
-        y11=Yt.y11,
-        y12=Yt.y12,
-        y21=Yt.y21,
-        y22=Yt.y22,
-        GS=1 / (ZS.real),
-        GL=1 / (abs(TZL.z11.real)), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Yt...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Yt
-    )
+    # sternK = calc_stern_stability2(
+    #     y11=Yt.y11,
+    #     y12=Yt.y12,
+    #     y21=Yt.y21,
+    #     y22=Yt.y22,
+    #     GS=1 / (ZS.real),
+    #     GL=1 / (abs(TZL.z11.real)), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Yt...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Yt
+    # )
     # fmt:on
+    sternK = calc_stern_stability2(
+        y11=Y1.y11,
+        y12=Y1.y12,
+        y21=Y1.y21,
+        y22=Y1.y22,
+        GS=1 / (ZS.real),
+        GL=1 / (abs(TZL.z11.real)),
+    )
 
     return {
         "F": F,
