@@ -226,7 +226,7 @@ def complex_fba(
         .length(10)
         .label(
             "${Z_{in}$"
-            + f"\n{fba['zin']:.3f~S}\nReturn Loss={(fba['InRetLoss'] * ureg.decibel):.3f~#P}",
+            + f"\n{fba['zin']:.3f~S}\nReturn Loss={(fba['InRetLoss'] * ureg.decibel):.3f~#P}\nvswr={(fba['InVSWR']):.2f}",
             halign="right",
             loc="top",
             color="red",
@@ -355,26 +355,41 @@ def complex_fba(
         .label(f"ideal\nt:{n1}:{n2}\nz:{n1**2}:{n2**2}", color="blue")
         .flip()
     )
-    d.push()
-    d += e.Gap().up().length(1)
-    d += (
-        e.Gap()
-        .right()
-        .length(1)
-        .label(
-            "${Z_{out}$"
-            + f"\n{fba['zout']:.3f~S}\nReturn Loss={(fba['OutRetLoss'] * ureg.decibel):.3f~#P}",
-            loc="right",
-            halign="left",
-            color="red",
-        )
-    )
-    d.pop()
+    # d.push()
+    # d += e.Gap().up().length(1)
+    # d += (
+    #     e.Gap()
+    #     .right()
+    #     .length(1)
+    #     .label(
+    #         "${Z_{out}$"
+    #         + f"\n{fba['zout']:.3f~S}\nReturn Loss={(fba['OutRetLoss'] * ureg.decibel):.3f~#P}\nvswr={(fba['OutVSWR']):.2f}",
+    #         loc="right",
+    #         halign="left",
+    #         color="red",
+    #     )
+    # )
+    # d.pop()
+
     d += e.Line().at(TR1.p1).length(0.5)
     d += e.GroundChassis()
 
     d += e.Line().at(TR1.s1).length(0.5)
     d += e.GroundChassis()
+
+    d += e.Gap().down().length(1)
+    d += (
+        e.Gap()
+        .right()
+        .length(0.5)
+        .label(
+            "${Z_{out}$"
+            + f"\n{fba['zout']:.3f~S}\nReturn Loss={(fba['OutRetLoss'] * ureg.decibel):.3f~#P}\nvswr={(fba['OutVSWR']):.2f}",
+            loc="right",
+            halign="left",
+            color="red",
+        )
+    )
 
     d += e.Line().at(TR1.s2).right().length(5)
     d += (
@@ -386,7 +401,7 @@ def complex_fba(
     d += e.GroundChassis().label(
         "Gain\n$G_t$" + f"={(fba['Gt_db'] * ureg.decibel):.4f~#P}",
         color="red",
-        loc="bot",
+        loc="right",
     )
     d += e.Gap().right()  # make space on right for truncated ZL
 
