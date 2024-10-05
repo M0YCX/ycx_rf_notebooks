@@ -502,6 +502,8 @@ def complex_fba(
 
     fig.update_layout(height=500, width=1400)
     fig.update_xaxes(type="log")
+    fig.update_yaxes(type="log", row=2, col=1)
+    fig.update_yaxes(type="log", row=2, col=2)
     fig.update_yaxes(type="log", row=2, col=3)
     fig.update_yaxes(type="log", row=2, col=4)
     fig.show()
