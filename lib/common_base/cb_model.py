@@ -135,10 +135,12 @@ def cb_model(
     # Calc input reflection coefficient & return loss
     GammaIn = (zin - ZS) / (zin + ZS)
     InRetLoss = -20 * math.log10(abs(GammaIn))
+    InVSWR = (1 + abs(GammaIn)) / (1 - abs(GammaIn))
 
     # Calc output reflection coefficient & return loss
-    GammaOut = (zout - ZS) / (zout + ZS)
+    GammaOut = (zout - ZL) / (zout + ZL)
     OutRetLoss = -20 * math.log10(abs(GammaOut))
+    OutVSWR = (1 + abs(GammaOut)) / (1 - abs(GammaOut))
 
     d = schem.Drawing()
 
@@ -179,7 +181,7 @@ def cb_model(
         .length(0.15)
         .label(
             "${Z_{in}$"
-            + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}",
+            + f"\n{zin:.3f~S}\nReturn Loss={(InRetLoss * ureg.decibel):.3f~#P}\nvswr={(InVSWR):.2f}",
             loc="left",
             halign="right",
             color="red",
@@ -218,7 +220,7 @@ def cb_model(
         .label(f"$r^`_b$\n{(Rbp * ureg.ohms):.1f~#P}", color="blue")
         .up()
     )
-    d += e.Line(ls="dashed").left().length(2)
+    d += e.Line(ls="dashed").left().length(1)
     d += e.Dot(open=True).label("b", color="grey", loc="top")
     d += e.Line().left().length(1)
     d += e.Line().down().length(1)
@@ -239,7 +241,7 @@ def cb_model(
     d += e.Line(ls="dashed").right().length(2)
     d += e.Dot()
     d.push()
-    d += e.Resistor().label(f"$R_O$\n{(RO * ureg.ohms):.1f~#P}", color="red", loc="bot").down()
+    d += e.Resistor(ls="dashed").label(f"$R_O$\n{(RO * ureg.ohms):.1f~#P}", color="red", loc="bot").down()
     d += e.Line(ls="dashed").left().length(2)
     d += e.Dot().label(
         f"\n$\\beta$={beta:.1f}\n$\\alpha$={alpha:.2f}",
@@ -264,26 +266,40 @@ def cb_model(
         .label(f"{Nout}t:1\n$z${Nout**2}:1", color="blue")
         .flip()
     )
-    d.push()
-    d += e.Gap().up().length(1)
-    d += (
-        e.Gap()
-        .right()
-        .length(1)
-        .label(
-            "${Z_{out}$"
-            + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}",
-            loc="right",
-            halign="left",
-            color="red",
-        )
-    )
-    d.pop()
+    # d.push()
+    # d += e.Gap().up().length(1)
+    # d += (
+    #     e.Gap()
+    #     .right()
+    #     .length(1)
+    #     .label(
+    #         "${Z_{out}$"
+    #         + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}\nvswr={(OutVSWR):.2f}",
+    #         loc="right",
+    #         halign="left",
+    #         color="red",
+    #     )
+    # )
+    # d.pop()
     d += e.Line().at(TRout.p1).length(0.5)
     d += e.GroundChassis()
 
     d += e.Line().at(TRout.s1).length(0.5)
     d += e.GroundChassis()
+
+    d += e.Gap().down().length(1)
+    d += (
+        e.Gap()
+        .right()
+        .length(0.5)
+        .label(
+            "${Z_{out}$"
+            + f"\n{zout:.3f~S}\nReturn Loss={(OutRetLoss * ureg.decibel):.3f~#P}\nvswr={(OutVSWR):.2f}",
+            loc="right",
+            halign="left",
+            color="red",
+        )
+    )
 
     d += e.Line().at(TRout.s2).right().length(5)
 
@@ -291,7 +307,7 @@ def cb_model(
     d += e.GroundChassis().label(
         "Gain\n$G_t$" + f"={(Gt_db * ureg.decibel):.4f~#P}",
         color="red",
-        loc="bot",
+        loc="right",
     )
 
     display(d)
