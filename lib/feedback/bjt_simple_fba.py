@@ -228,7 +228,7 @@ def simple_fba(
 
     d.pop()
     d += e.Line().up().length(1)
-    d += e.SourceI().reverse().up().label("$\\beta i_b$", loc="bot").length(1)
+    d += e.SourceControlledI().reverse().up().label("$\\beta i_b$", loc="bot").length(1)
     d += e.Line().length(0.5)
     d += e.Arrow().reverse().length(0.75)
     d += e.Dot()

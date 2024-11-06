@@ -227,7 +227,7 @@ def cb_model(
     d += e.GroundChassis()
     d.pop()
     d += e.Line(color="grey").right()
-    d += e.SourceI(color="grey").reverse().up().label("$\\beta I_b$", loc="bot")
+    d += e.SourceControlledI(color="grey").reverse().up().label("$\\beta I_b$", loc="bot")
     d += e.Dot(color="grey")
     d.push()
     d += e.Line(color="grey").left(2)

@@ -293,7 +293,7 @@ def complex_fba(
 
     d.pop()
     d += (
-        e.SourceI(color="grey")
+        e.SourceControlledI(color="grey")
         .length(2)
         .reverse()
         .label(
