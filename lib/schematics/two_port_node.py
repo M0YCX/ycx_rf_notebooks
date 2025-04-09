@@ -15,6 +15,8 @@ class Node2P(e.Element):
         x22="$x_{22}$",
         inp="->",
         outp="<-",
+        ini="",
+        outi="",
         **kwargs,
     ):
         super().__init__(**kwargs)
@@ -68,6 +70,16 @@ class Node2P(e.Element):
 
         self.segments.append(
             SegmentText((xoff - 1.0 - 2.5, 1.0), label=inp, color="blue", fontsize=12)
+        )
+        self.segments.append(
+            Segment(
+                [(xoff - 1.25, 3.5), (xoff - 1.25, 3.8)],
+                color="black",
+                arrow="->",
+                arrowwidth=0.1,
+                arrowlength=0.2,
+                lw=0.7,
+            )
         )
         self.segments.append(
             SegmentText((xoff + 4.0 + 2.5, 1.0), label=outp, color="blue", fontsize=12)
@@ -128,3 +140,35 @@ class Node2P(e.Element):
         self.segments.append(
             SegmentText((xoff + 1.5, -1.0), label=x12, color="blue", fontsize=12)
         )
+
+        if ini != "":
+            # input i_1
+            self.segments.append(
+                Segment(
+                    [(xoff - 1.4, 2.8), (xoff - 0.6, 2.8)],
+                    color="black",
+                    arrow="->",
+                    arrowwidth=0.1,
+                    arrowlength=0.2,
+                    lw=0.7,
+                )
+            )
+            self.segments.append(
+                SegmentText((xoff - 1, 2.99), label=ini, color="black", fontsize=12)
+            )
+
+        if outi != "":
+            # output i_2
+            self.segments.append(
+                Segment(
+                    [(xoff + 4.5, 2.8), (xoff + 3.7, 2.8)],
+                    color="black",
+                    arrow="->",
+                    arrowwidth=0.1,
+                    arrowlength=0.2,
+                    lw=0.7,
+                )
+            )
+            self.segments.append(
+                SegmentText((xoff + 4.1, 2.99), label=outi, color="black", fontsize=12)
+            )
