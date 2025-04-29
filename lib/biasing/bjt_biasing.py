@@ -250,7 +250,7 @@ interactive_draw_bjt_bias = interactive(
     R3=widgets.SelectionSlider(
         value=510.0,
         description="$R_3$",
-        options=list(erange(res_series, 100.0, 200000.0)),
+        options=list(erange(res_series, 10.0, 200000.0)),
         style=style,
         layout=layout,
     ),
