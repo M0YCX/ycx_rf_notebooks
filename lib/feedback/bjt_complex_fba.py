@@ -745,6 +745,7 @@ def complex_fba(
     ax22 = fig2.add_subplot(224)
 
     def _annot_point(ax=None, x=None, y=None, f=None):
+        font_size = 8
         if "PolarAxes" in str(type(ax)):
             c = Complex(complex(x, y))
             p = c.as_polar()
@@ -755,7 +756,7 @@ def complex_fba(
                 theta,
                 r,
                 f"{(f*ureg.hertz):.0f~#P}",
-                fontsize=6,
+                fontsize=font_size,
                 ha="center",
                 va="bottom",
                 color="red",
@@ -767,7 +768,7 @@ def complex_fba(
                 x,
                 y,
                 f"{(f*ureg.hertz):.0f~#P}",
-                fontsize=6,
+                fontsize=font_size,
                 ha="center",
                 va="bottom",
                 color="red",
