@@ -39,17 +39,19 @@ def _calc_complex_fba(
     F=None,
     FT=None,
     Rbp=None,
-    extLin=None,
+    extLb=None,
     extCin=None,
     Ccb=None,
     Cce=None,
     Ie_mA=None,
     Re=None,
-    Le=None,
+    extLe=None,
     Rf=None,
     Lf=None,
     Cf=None,
-    extLout=None,
+    extLc=None,
+    extCout=None,
+    extCrev=None,
     N=None,
 ):
     """
@@ -60,17 +62,19 @@ def _calc_complex_fba(
         F       - Frequence to calculate characteristics for
         FT      - Transistor's transistion frequency,
         Rbp     - Base spreading resistance (intrinsic),
-        extLin  - Input series inductance (extrinsic),
+        extLb  - Input series inductance (extrinsic),
         extCin  - Input shunt capacitance (extrinsic),
         Ccb     - Collector to base capacitance (intrinsic),
         Cce     - Collector to emitter capacitance (intrinsic),
         Ie_mA   - Bias emitter current,
         Re      - Emitter resistor
-        Le      - Emitter inductance,
+        extLe      - Emitter inductance (extrinsic),
         Rf      - Feedback resistor,
         Lf      - Feedback inductance,
         Cf      - Feedback capacitance,
-        extLout - Output series inductance (extrinsic)
+        extLc - Output series inductance (extrinsic),
+        extCout - Output parallel capacitance (extrinsic),
+        extCrev - Reverse capacitance (extrinsic),
         N       - Ideal transformer turns ratio,
     """
     YS = Y(1 / ZS)
@@ -80,60 +84,76 @@ def _calc_complex_fba(
     # transformer to calc the Stern stability
     YL_Ap = Netb(b11=1, b12=0, b21=-YL, b22=1)
 
-    beta = Complex(B0 / (1 + (1j * B0 * F) / FT))
-
     w = 2 * math.pi * F
     jw = 1j * w
 
-    extLin_A = Neta(a11=1, a12=jw * extLin, a21=0, a22=1)
-    extCin_A = Neta(a11=1, a12=0, a21=jw * extCin, a22=1)
+    extLb_A = Neta(a11=1, a12=jw * extLb, a21=0, a22=1)  # L in series
+    extLc_A = Neta(a11=1, a12=jw * extLc, a21=0, a22=1)  # L in series
+    extLe_z = Z(1j * (w * extLe))
+    extLe_Z = NetZ(z11=extLe_z, z12=extLe_z, z21=extLe_z, z22=extLe_z)
+
+    extCin_y = Y(-jw * extCin)
+    extCin_Y = NetY(y11=extCin_y, y12=-extCin_y, y21=-extCin_y, y22=extCin_y)
+
+    extCout_A = Neta(a11=1, a12=0, a21=jw * extCout, a22=1)  # C in shunt
+
+    extCrev_y = Y(-jw * extCrev)
+    extCrev_Y = NetY(y11=extCrev_y, y12=-extCrev_y, y21=-extCrev_y, y22=extCrev_y)
 
     # base spreading resistor as ABCD matrix for cascading below
     Rbp_A = Neta(a11=1, a12=Rbp, a21=0, a22=1)
 
+    ################################################
+    # Hybrid-Pi model
+
     # Emitter complex impedance
     re = 26 / Ie_mA
-    Ze = Z(re + Re + 1j * (w * Le))
-    # Ze = Z(re + Re + 1j * (w * Le - 1 / (w * 1000 * 10**-9))) # experiment with Ce
+    zre = Z(re)
 
-    # feedback network as an admittance for later adding in parallel
+    beta = Complex(B0 / (1 + (1j * B0 * F) / FT))
+
+    # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
+    # intrinsics:-
+    y11e = Y(1 / (zre * (beta + 1)) + (jw * Ccb))
+    y12e = Y(0 - (jw * Ccb))
+    y21e = Y(beta / (zre * (beta + 1)) - (jw * Ccb))
+    y22e = Y(0 + (jw * Ccb))
+    Ye = NetY(y11=y11e, y12=y12e, y21=y21e, y22=y22e)
+
+    # Cascade the extLb, extCin and base spreading resistance to the hybrid-pi amplifier
+    Ae = Ye.to_a()
+    Aintrinsic = Rbp_A @ Ae
+    # if Cce provided than cascade that too
+    if Cce is not None:
+        ACce = Neta(a11=1, a12=0, a21=jw * Cce, a22=1)
+        Aintrinsic = Aintrinsic @ ACce
+
+    # The intrinsic model is complete at this point in the matrix Aintrinsic
+
+    Awith_extrinsic = extLb_A @ Aintrinsic @ extLc_A
+    Ywith_extrinsic = (Awith_extrinsic.to_Z() + extLe_Z).to_Y()
+    Awith_extrinsic = (extCrev_Y + Ywith_extrinsic + extCin_Y).to_a() @ extCout_A
+
+    extRe = Z(Re)
+    extRe_Z = NetZ(z11=extRe, z12=extRe, z21=extRe, z22=extRe)
+    YAwith_extrinsic = (Awith_extrinsic.to_Z() + extRe_Z).to_Y()
+
     Zf = Z(Rf + 1j * (2 * math.pi * F * Lf - 1 / (2 * math.pi * F * Cf)))
     Yf = NetY(y11=1 / Zf, y12=-1 / Zf, y21=-1 / Zf, y22=1 / Zf)
+    Ywith_feedback = YAwith_extrinsic + Yf
 
+    ##########
+    # Get interim output impedance to match Wes's Zout
+    izout = Z(1 / Ywith_feedback.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
+
+    ###################################################
     # output transformer N:1 as ABCD for cascade below
     ATR1 = None
     if N > 0:
         ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
     else:
         ATR1 = Neta(a11=1 / abs(N), a12=0, a21=0, a22=abs(N))
-
-    # Note: this is the same as adding the Y matrix of Ccb to the simple transistor model (ie in parallel)
-    y11e = Y(1 / (Ze * (beta + 1)) + (jw * Ccb))
-    y12e = Y(0 - (jw * Ccb))
-    y21e = Y(beta / (Ze * (beta + 1)) - (jw * Ccb))
-    y22e = Y(0 + (jw * Ccb))
-    Ye = NetY(y11=y11e, y12=y12e, y21=y21e, y22=y22e)
-
-    # Cascade the extCin and base spreading resistance to the hybrid-pi amplifier
-    Ae = Ye.to_a()
-    A1 = extLin_A @ extCin_A @ Rbp_A @ Ae
-    # Strans = A1.to_S()
-
-    # if Cce provided than cascade that too
-    if Cce is not None:
-        ACce = Neta(a11=1, a12=0, a21=jw * Cce, a22=1)
-        A1 = A1 @ ACce
-
-    extLout_A = Neta(a11=1, a12=jw * extLout, a21=0, a22=1)
-    A1 = A1 @ extLout_A
-
-    # Add feedback in parallel
-    Yt = A1.to_Y() + Yf
-
-    # Get interim output impedance to match Wes's Zout
-    izout = Z(1 / Yt.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
-
-    Y1 = (Yt.to_a() @ ATR1).to_Y()
+    Y1 = (Ywith_feedback.to_a() @ ATR1).to_Y()
     S1 = Y1.to_S()
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
@@ -158,27 +178,21 @@ def _calc_complex_fba(
     OutVSWR = (1 + abs(GammaOut)) / (1 - abs(GammaOut))
 
     # Calc Linvill stability
-    # linvillC = calc_linvill_stability2(y11=Yt.y11, y12=Yt.y12, y21=Yt.y21, y22=Yt.y22)
+    # linvillC = calc_linvill_stability2(y11=Ywith_feedback.y11, y12=Ywith_feedback.y12, y21=Ywith_feedback.y21, y22=Ywith_feedback.y22)
     linvillC = calc_linvill_stability2(y11=Y1.y11, y12=Y1.y12, y21=Y1.y21, y22=Y1.y22)
 
     # Calc ZL as seen through the output transformer
     TZL = (YL_Ap @ ATR1.to_b()).to_Z()
-    # print(f"TZL={TZL}")
-    # TYL = TZL.to_Y()
-    # print(f"TYL={TYL}")
-
-    # ZATR1 = ATR1.to_Z().zin(ZL=ZL)  # as expected div by zero error...
-    # print(f"ZATR1={ZATR1}")
 
     # Calc Stern stability
     # fmt:off
     # sternK = calc_stern_stability2(
-    #     y11=Yt.y11,
-    #     y12=Yt.y12,
-    #     y21=Yt.y21,
-    #     y22=Yt.y22,
+    #     y11=Ywith_feedback.y11,
+    #     y12=Ywith_feedback.y12,
+    #     y21=Ywith_feedback.y21,
+    #     y22=Ywith_feedback.y22,
     #     GS=1 / (ZS.real),
-    #     GL=1 / (abs(TZL.z11.real)), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Yt...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Yt
+    #     GL=1 / (abs(TZL.z11.real)), # TODO: I dont think this is correct! as it doesnt account for the effect of the transformer on Ywith_feedback...  I think i need a reverse ABCD' cascade matrix of the transformer to translate ZL to what is being seen by the amplifier matrix Ywith_feedback
     # )
     # fmt:on
     sternK = calc_stern_stability2(
@@ -211,7 +225,6 @@ def _calc_complex_fba(
         "OutVSWR": OutVSWR,
         "Gt_db": Gt_db,
         "re": re,
-        "Ze": Ze,
         "beta": beta,
         "beta_mag": abs(beta),
         "linvillC": linvillC,
@@ -228,8 +241,8 @@ def complex_fba(
     Ie_mA=10,
     Rbp=10.0,
     Re=6.8,
-    Le_nH=0,
-    extLin_nH=0,
+    extLe_nH=0,
+    extLb_nH=0,
     extCin_pF=0,
     Ccb_pF=5,
     Cce_pF=0,
@@ -240,13 +253,15 @@ def complex_fba(
     ZS_imag=0,
     ZL_real=50,
     ZL_imag=0,
-    extLout_nH=0,
+    extLc_nH=0,
+    extCout_pF=0,
+    extCrev_pF=0,
     N=2,
     from_mhz=None,
     to_mhz=None,
 ):
     Ccb = Ccb_pF * 10**-12
-    Le = Le_nH * 10**-9
+    extLe = extLe_nH * 10**-9
     F = F_mhz * 10**6
     FT = FT_mhz * 10**6
     Ie = Ie_mA * 10**-3
@@ -258,13 +273,20 @@ def complex_fba(
     if Cce_pF != 0:
         Cce = Cce_pF * 10**-12
 
-    extLin = extLin_nH * 10**-9
+    extLb = extLb_nH * 10**-9
     extCin = extCin_pF * 10**-12
 
-    extLout = extLout_nH * 10**-9
+    extLc = extLc_nH * 10**-9
+    extCout = extCout_pF * 10**-12
+
+    extCrev = extCrev_pF * 10**-12
 
     ZS = Z(ZS_real + (1j * ZS_imag))
     ZL = Z(ZL_real + (1j * ZL_imag))
+
+    instrinsic_color = "#8585b5"
+    extrinsic_color = "#985858"
+    feedback_color = "#589858"
 
     # plot range
 
@@ -286,17 +308,19 @@ def complex_fba(
         F=F,
         FT=FT,
         Rbp=Rbp,
-        extLin=extLin,
+        extLb=extLb,
         extCin=extCin,
         Ccb=Ccb,
         Cce=Cce,
         Ie_mA=Ie_mA,
         Re=Re,
-        Le=Le,
+        extLe=extLe,
         Rf=Rf,
         Lf=Lf,
         Cf=Cf,
-        extLout=extLout,
+        extLc=extLc,
+        extCout=extCout,
+        extCrev=extCrev,
         N=N,
     )
 
@@ -312,10 +336,11 @@ def complex_fba(
     )
     d.push()
 
+    d += e.Gap().down().length(4)
     d += (
         e.Gap()
         .right()
-        .length(10)
+        .length(9)
         .label(
             "${Z_{in}$"
             + f"\n{fba['zin']:.3f~S}\nReturn Loss={(fba['InRetLoss'] * ureg.decibel):.3f~#P}\nvswr={(fba['InVSWR']):.2f}",
@@ -329,52 +354,73 @@ def complex_fba(
     d += e.SourceSin().label("$V_{in}$", loc="top").down().length(2)
     d += e.GroundChassis()
     d.pop()
-    d += e.Line().right().length(2)
-    d += e.Dot(open=True).label("b", color="grey", loc="bot")
+    d += e.Line().right().length(5)
+
+    d.push()
+    d += e.Dot(color=extrinsic_color)
+    d += e.Line(color=extrinsic_color).length(4).down()
     d += (
-        e.Resistor(color="grey")
+        e.Capacitor(color=extrinsic_color)
+        .length(6.5)
+        .right()
+        .label("$extC_{in}$" + f"\n{(extCin * ureg.farads):.1f~#P}", color="blue")
+    )
+    d += e.Dot(color=extrinsic_color)
+    d.pop()
+
+    d += (
+        e.Inductor(color=extrinsic_color)
+        .length(2)
+        .label(
+            "$extL_b$" + f"\n{(extLb * ureg.henrys):.2f~#P}", color="blue", loc="bot"
+        )
+    )
+    d += e.Dot(open=True, color=instrinsic_color).label(
+        "b", color=instrinsic_color, loc="bot"
+    )
+
+    d += (
+        e.Resistor(color=instrinsic_color)
         .right()
         .label(f"$R^`_b$\n{(Rbp * ureg.ohms):.1f~#P}", color="blue")
     )
-    d += e.Line(color="grey").right().length(1.5)
-    d += e.Dot(color="grey").label(
-        f"\n $I_e$={(Ie * ureg.ampere):.1f~#P}", color="blue", loc="right"
-    )
+    d += e.Line(color=instrinsic_color).right().length(1.5)
+    d += e.Dot(color=instrinsic_color)
     d.push()
     d += (
-        e.Resistor(color="grey")
-        .label("$r_e$" + f"={(fba['re'] * ureg.ohms):.1f~#P}", color="red", loc="bot")
+        e.Resistor(color=instrinsic_color)
+        .label("$r_e$" + f"={(fba['re'] * ureg.ohms):.1f~#P}", color="red", loc="top")
         .down()
         .length(2)
     )
-    d += e.Dot(open=True).label("e", loc="right", color="grey")
-    d.push()
-    d += (
-        e.Gap()
-        .length(5)
-        .right()
-        .label(f"$Z_e$={(fba['Ze'].c * ureg.ohms):.2}", color="red")
+    d += e.Dot(open=True, color=instrinsic_color).label(
+        "e", loc="left", color=instrinsic_color
     )
-    d.pop()
+    d += (
+        e.Inductor(color=extrinsic_color)
+        .label(
+            "$extL_e$" + f"\n{(extLe * ureg.henrys):.2f~#P}", color="blue", loc="bot"
+        )
+        .length(2)
+    )
     d += (
         e.Resistor()
         .label("$R_e$" + f"\n{(Re * ureg.ohms):.1f~#P}", color="blue", loc="bot")
-        .length(2)
+        .length(3)
     )
     d += (
-        e.Inductor()
-        .label("$L_e$" + f"\n{(Le * ureg.henrys):.1f~#P}", color="blue", loc="bot")
-        .length(2)
-    )
-    d += e.GroundChassis().label(
-        f"\n$\\beta$={fba['beta']:.1f}@{(F*ureg.hertz):.1f~#P}",
-        color="red",
-        loc="bot",
+        e.GroundChassis()
+        .label(
+            f"\n$\\beta$={fba['beta']:.1f}@{(F*ureg.hertz):.1f~#P}",
+            color="red",
+            loc="bot",
+        )
+        .label(f"\n $I_e$={(Ie * ureg.ampere):.1f~#P}", color="blue", loc="right")
     )
 
     d.pop()
     d += (
-        e.SourceControlledI(color="grey")
+        e.SourceControlledI(color=instrinsic_color)
         .length(2)
         .reverse()
         .label(
@@ -383,75 +429,109 @@ def complex_fba(
             loc="bot",
         )
     )
-    d += e.Dot(open=True).label("c", loc="right", color="grey")
-    d.push()
-    d += (
-        e.Gap()
-        .right()
-        .length(4)
-        .label(
-            "(intermediate) ${Z_{out}$" + f"\n{fba['izout']:.3f~S}",
-            loc="right",
-            color="red",
-        )
+    d += e.Dot(open=True, color=instrinsic_color).label(
+        "c", loc="right", ofst=(0.1, 0.2), color=instrinsic_color
     )
-    d.pop()
+    if N != 1:
+        d.push()
+        d += e.Gap().up().length(3)
+        d += (
+            e.Gap()
+            .right()
+            .length(4)
+            .label(
+                "(intermediate) ${Z_{out}$" + f"\n{fba['izout']:.3f~S}",
+                loc="right",
+                color="red",
+            )
+        )
+        d.pop()
     d.push()
-    d += e.Line(color="grey").left().length(1)
+    d += e.Line(color=instrinsic_color).left().length(1)
     d += (
-        e.Capacitor(color="grey")
+        e.Capacitor(color=instrinsic_color)
         .length(2)
         .label("$C_{cb}$" + f"\n{(Ccb * ureg.farads):.1f~#P}", color="blue")
         .down()
     )
-    d += e.Dot(color="grey")
+    d += e.Dot(color=instrinsic_color)
     d.pop()
 
     if Cce is not None:
         d.push()
-        d += e.Line(color="grey").right().length(1.5)
+        d += e.Line(color=instrinsic_color).right().length(1.5)
         d += (
-            e.Capacitor(color="grey")
-            .length(2)
+            e.Capacitor(color=instrinsic_color)
+            .length(4)
             .label(
                 "$C_{ce}$" + f"\n{(Cce * ureg.farads):.1f~#P}", color="blue", loc="bot"
             )
             .down()
         )
-        d += e.Line(color="grey").left().length(1.5)
-        # d += e.Dot(color="grey")
+        d += e.Line(color=instrinsic_color).left().length(1.5)
         d.pop()
 
-    d += e.Line().up().length(1)
-    d += e.Dot()
+    d += (
+        e.Inductor(color=extrinsic_color)
+        .up()
+        .length(2)
+        .label(
+            "$extL_c$" + f"\n{(extLc * ureg.henrys):.2f~#P}", color="blue", loc="bot"
+        )
+    )
+    d += e.Dot(color=extrinsic_color)
     d.push()
 
-    # feedback
     d += (
-        e.Capacitor()
+        e.Capacitor(color=extrinsic_color)
+        .left()
+        .length(6.5)
+        .label("$extC_{rev}$" + f"\n{(extCrev * ureg.farads):.1f~#P}", color="blue")
+    )
+    d += e.Line(color=extrinsic_color).down().length(4)
+
+    # feedback
+    d.pop()
+    d.push()
+    d += e.Line().up().length(2)
+    d += (topDot := e.Dot())
+    d += (
+        e.Capacitor(color=feedback_color)
         .label(f"$C_f$\n{(Cf * ureg.farads):.1f~#P}", color="blue")
         .left()
-        .length(2)
+        .length(4)
     )
     d += (
-        e.Inductor()
+        e.Inductor(color=feedback_color)
         .label("$L_f$" + f"\n{(Lf * ureg.henrys):.1f~#P}", color="blue")
         .flip()
-        .length(2)
+        .length(4)
     )
-    d += e.Line().length(1)
+    d += e.Line(color=feedback_color).length(1)
     d += (
-        e.Resistor()
+        e.Resistor(color=feedback_color)
         .label("$R_f$" + f"\n{(Rf * ureg.ohms):.1f~#P}", color="blue")
         .down()
-        .length(3)
+        .length(6)
     )
     d += e.Dot()
 
     d.pop()
+    d += e.Line(color=extrinsic_color).right().length(4)
+    d += (
+        e.Capacitor(color=extrinsic_color)
+        .down()
+        .length(8)
+        .label(
+            "$extC_{out}$" + f"\n{(extCout * ureg.farads):.1f~#P}",
+            loc="bot",
+            color="blue",
+        )
+    )
+    d += e.Line(color=extrinsic_color).left().length(4)
 
-    d += e.Line().right().length(6)
-    d += e.Line().down().length(1)
+    d += e.Line().at(topDot.center).right().length(7)
+    d += e.Line().down().length(4)
     n1 = N
     n2 = 1
     if N < 0:
@@ -463,21 +543,6 @@ def complex_fba(
         .label(f"ideal\nt:{n1}:{n2}\nz:{n1**2}:{n2**2}", color="blue")
         .flip()
     )
-    # d.push()
-    # d += e.Gap().up().length(1)
-    # d += (
-    #     e.Gap()
-    #     .right()
-    #     .length(1)
-    #     .label(
-    #         "${Z_{out}$"
-    #         + f"\n{fba['zout']:.3f~S}\nReturn Loss={(fba['OutRetLoss'] * ureg.decibel):.3f~#P}\nvswr={(fba['OutVSWR']):.2f}",
-    #         loc="right",
-    #         halign="left",
-    #         color="red",
-    #     )
-    # )
-    # d.pop()
 
     d += e.Line().at(TR1.p1).length(0.5)
     d += e.GroundChassis()
@@ -504,7 +569,7 @@ def complex_fba(
         e.Resistor()
         .label("$Z_L$" + f"\n{ZL.as_complex()}", loc="bot", color="blue")
         .down()
-        .length(2.1)
+        .length(3)
     )
     d += e.GroundChassis().label(
         "Gain\n$G_t$" + f"={(fba['Gt_db'] * ureg.decibel):.4f~#P}",
@@ -524,17 +589,19 @@ def complex_fba(
             F=f,
             FT=FT,
             Rbp=Rbp,
-            extLin=extLin,
+            extLb=extLb,
             extCin=extCin,
             Ccb=Ccb,
             Cce=Cce,
             Ie_mA=Ie_mA,
             Re=Re,
-            Le=Le,
+            extLe=extLe,
             Rf=Rf,
             Lf=Lf,
             Cf=Cf,
-            extLout=extLout,
+            extLc=extLc,
+            extCout=extCout,
+            extCrev=extCrev,
             N=N,
         )
 
@@ -599,7 +666,7 @@ def complex_fba(
             name="Linvill Stability",
             mode="markers+lines",
             marker={"color": colors, "size": 3},
-            line={"color": "grey"},
+            line={"color": instrinsic_color},
         ),
         row=2,
         col=1,
@@ -613,7 +680,7 @@ def complex_fba(
             name="Stern Stability",
             mode="markers+lines",
             marker={"color": colors, "size": 3},
-            line={"color": "grey"},
+            line={"color": instrinsic_color},
         ),
         row=2,
         col=2,
@@ -648,7 +715,7 @@ def complex_fba(
             name="Rollett Stability",
             mode="markers+lines",
             marker={"color": rollett_colors, "size": 3},
-            line={"color": "grey"},
+            line={"color": instrinsic_color},
         ),
         row=3,
         col=2,
@@ -683,12 +750,28 @@ def complex_fba(
             p = c.as_polar()
             theta = math.radians(p["angle"])
             r = p["mag"]
-            ax.scatter(theta, r, marker='v', s=20, color="red")
-            ax.text(theta, r, f'{(f*ureg.hertz):.0f~#P}', fontsize=6, ha='center', va='bottom', color='red')
+            ax.scatter(theta, r, marker="v", s=20, color="red")
+            ax.text(
+                theta,
+                r,
+                f"{(f*ureg.hertz):.0f~#P}",
+                fontsize=6,
+                ha="center",
+                va="bottom",
+                color="red",
+            )
         else:
-            ax.scatter(x, y, marker='v', s=20, color="red")
+            ax.scatter(x, y, marker="v", s=20, color="red")
             # ax.annotate(f'M', (x, y), xytext=(-7, 7), textcoords='offset points', color='red')
-            ax.text(x, y, f'{(f*ureg.hertz):.0f~#P}', fontsize=6, ha='center', va='bottom', color='red')
+            ax.text(
+                x,
+                y,
+                f"{(f*ureg.hertz):.0f~#P}",
+                fontsize=6,
+                ha="center",
+                va="bottom",
+                color="red",
+            )
 
     def _annot(ax=None, m=None, n=None, ntw=None):
         f = ntw.frequency.f_scaled[0]
@@ -705,14 +788,12 @@ def complex_fba(
     ntw.plot_s_polar(m=0, n=1, ax=ax12)
     ntw.plot_s_polar(m=1, n=0, ax=ax21)
     ntw.plot_s_smith(m=1, n=1, draw_labels=True, ax=ax22)
-    # print(ax12)
 
-    for p in ((ax11,0,0), (ax12,0,1), (ax21,1,0), (ax22,1,1)):
+    for p in ((ax11, 0, 0), (ax12, 0, 1), (ax21, 1, 0), (ax22, 1, 1)):
         ax = p[0]
         m = p[1]
         n = p[2]
         _annot(ax=ax, m=m, n=n, ntw=ntw)
-
 
     return ntw
 
@@ -760,11 +841,11 @@ Re = widgets.SelectionSlider(
     style=style,
     layout=Layout(width="auto", grid_area="Re"),
 )
-Le_nH = widgets.FloatText(
+extLe_nH = widgets.FloatText(
     value=10.0,
-    description="$Le$ nH",
+    description="$extLe$ nH",
     style=style,
-    layout=Layout(width="auto", grid_area="Le_nH"),
+    layout=Layout(width="auto", grid_area="extLe_nH"),
 )
 Ccb_pF = widgets.FloatText(
     value=5.0,
@@ -832,7 +913,7 @@ g1 = GridBox(
         B0,
         Ie_mA,
         Rbp,
-        Le_nH,
+        extLe_nH,
         Re,
         Ccb_pF,
         Cf_pF,
@@ -850,7 +931,7 @@ g1 = GridBox(
         grid_template_columns="25% 25% 25% 25%",
         grid_template_areas="""
             "F_mhz FT_mhz B0 Ie_mA"
-            "Rbp Re Re Le_nH"
+            "Rbp Re Re extLe_nH"
             "Ccb_pF Cf_pF Cf_pF Lf_nH"
             "Rf Rf ZS_real ZS_imag"
             "ZL_real ZL_imag N N"
@@ -869,7 +950,7 @@ interactive_complex_fba = (
             "B0": B0,
             "Ie_mA": Ie_mA,
             "Rbp": Rbp,
-            "Le_nH": Le_nH,
+            "extLe_nH": extLe_nH,
             "Re": Re,
             "Ccb_pF": Ccb_pF,
             "Cf_pF": Cf_pF,
