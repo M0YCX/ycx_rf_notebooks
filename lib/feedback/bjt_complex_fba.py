@@ -2,17 +2,20 @@ import math
 import ipywidgets as widgets
 import numpy as np
 import pint
+import matplotlib.pyplot as plt
 import plotly.io as pio
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import schemdraw as schem
 import schemdraw.elements as e
+import skrf as rf
+from skrf import Network, plotting
 from eseries import E12, E24, E48, E96, erange
 from IPython.display import display
 from ipywidgets import Layout, interactive, GridBox, interactive_output
 from ycx_complex_numbers import Complex, Neta, Netb, NetY, NetZ, Y, Z
 from ycx_rf_amplifiers.y_params import calc_linvill_stability2, calc_stern_stability2
-
+from ycx_rf_amplifiers.s_params import calc_rollett_stability
 
 # Support rendering plots in github
 pio.renderers.default = "jupyterlab+png"
@@ -36,15 +39,40 @@ def _calc_complex_fba(
     F=None,
     FT=None,
     Rbp=None,
+    extLin=None,
+    extCin=None,
     Ccb=None,
+    Cce=None,
     Ie_mA=None,
     Re=None,
     Le=None,
     Rf=None,
     Lf=None,
     Cf=None,
+    extLout=None,
     N=None,
 ):
+    """
+    Params:
+        ZS      - Source Impedance
+        ZL      - Load Impedance
+        B0      - DC or low frequency Beta
+        F       - Frequence to calculate characteristics for
+        FT      - Transistor's transistion frequency,
+        Rbp     - Base spreading resistance (intrinsic),
+        extLin  - Input series inductance (extrinsic),
+        extCin  - Input shunt capacitance (extrinsic),
+        Ccb     - Collector to base capacitance (intrinsic),
+        Cce     - Collector to emitter capacitance (intrinsic),
+        Ie_mA   - Bias emitter current,
+        Re      - Emitter resistor
+        Le      - Emitter inductance,
+        Rf      - Feedback resistor,
+        Lf      - Feedback inductance,
+        Cf      - Feedback capacitance,
+        extLout - Output series inductance (extrinsic)
+        N       - Ideal transformer turns ratio,
+    """
     YS = Y(1 / ZS)
     YL = Y(1 / ZL)
 
@@ -56,6 +84,9 @@ def _calc_complex_fba(
 
     w = 2 * math.pi * F
     jw = 1j * w
+
+    extLin_A = Neta(a11=1, a12=jw * extLin, a21=0, a22=1)
+    extCin_A = Neta(a11=1, a12=0, a21=jw * extCin, a22=1)
 
     # base spreading resistor as ABCD matrix for cascading below
     Rbp_A = Neta(a11=1, a12=Rbp, a21=0, a22=1)
@@ -83,9 +114,18 @@ def _calc_complex_fba(
     y22e = Y(0 + (jw * Ccb))
     Ye = NetY(y11=y11e, y12=y12e, y21=y21e, y22=y22e)
 
-    # Cascade the base spreading resistance to the hybrid-pi amplifier
+    # Cascade the extCin and base spreading resistance to the hybrid-pi amplifier
     Ae = Ye.to_a()
-    A1 = Rbp_A @ Ae
+    A1 = extLin_A @ extCin_A @ Rbp_A @ Ae
+    # Strans = A1.to_S()
+
+    # if Cce provided than cascade that too
+    if Cce is not None:
+        ACce = Neta(a11=1, a12=0, a21=jw * Cce, a22=1)
+        A1 = A1 @ ACce
+
+    extLout_A = Neta(a11=1, a12=jw * extLout, a21=0, a22=1)
+    A1 = A1 @ extLout_A
 
     # Add feedback in parallel
     Yt = A1.to_Y() + Yf
@@ -114,6 +154,7 @@ def _calc_complex_fba(
     # Calc output reflection coefficient & return loss
     GammaOut = (zout - ZL) / (zout + ZL)
     OutRetLoss = -20 * math.log10(abs(GammaOut))
+    # print(f"GammaOut={GammaOut}")
     OutVSWR = (1 + abs(GammaOut)) / (1 - abs(GammaOut))
 
     # Calc Linvill stability
@@ -149,6 +190,12 @@ def _calc_complex_fba(
         GL=1 / (abs(TZL.z11.real)),
     )
 
+    insertion_gain_db = 10 * math.log10(S1.s21.as_polar()["mag"] ** 2)
+
+    rollett_stability = calc_rollett_stability(
+        s11=S1.s11, s12=S1.s12, s21=S1.s21, s22=S1.s22
+    )
+
     return {
         "F": F,
         "Y": Y1,
@@ -169,6 +216,8 @@ def _calc_complex_fba(
         "beta_mag": abs(beta),
         "linvillC": linvillC,
         "sternK": sternK,
+        "insertion_gain_db": insertion_gain_db,
+        "rollett_stability": rollett_stability,
     }
 
 
@@ -180,7 +229,10 @@ def complex_fba(
     Rbp=10.0,
     Re=6.8,
     Le_nH=0,
+    extLin_nH=0,
+    extCin_pF=0,
     Ccb_pF=5,
+    Cce_pF=0,
     Cf_pF=10000,
     Lf_nH=20,
     Rf=1000,
@@ -188,7 +240,10 @@ def complex_fba(
     ZS_imag=0,
     ZL_real=50,
     ZL_imag=0,
+    extLout_nH=0,
     N=2,
+    from_mhz=None,
+    to_mhz=None,
 ):
     Ccb = Ccb_pF * 10**-12
     Le = Le_nH * 10**-9
@@ -199,8 +254,30 @@ def complex_fba(
     Cf = Cf_pF * 10**-12
     Lf = Lf_nH * 10**-9
 
+    Cce = None
+    if Cce_pF != 0:
+        Cce = Cce_pF * 10**-12
+
+    extLin = extLin_nH * 10**-9
+    extCin = extCin_pF * 10**-12
+
+    extLout = extLout_nH * 10**-9
+
     ZS = Z(ZS_real + (1j * ZS_imag))
     ZL = Z(ZL_real + (1j * ZL_imag))
+
+    # plot range
+
+    if from_mhz is None:
+        from_hz = 1000
+    else:
+        from_hz = from_mhz * 10**6
+    if to_mhz is None:
+        to_hz = FT
+    else:
+        to_hz = to_mhz * 10**6
+    plot_from_exp = math.log10(from_hz)
+    plot_to_exp = math.log10(to_hz)
 
     fba = _calc_complex_fba(
         ZS=ZS,
@@ -209,13 +286,17 @@ def complex_fba(
         F=F,
         FT=FT,
         Rbp=Rbp,
+        extLin=extLin,
+        extCin=extCin,
         Ccb=Ccb,
+        Cce=Cce,
         Ie_mA=Ie_mA,
         Re=Re,
         Le=Le,
         Rf=Rf,
         Lf=Lf,
         Cf=Cf,
+        extLout=extLout,
         N=N,
     )
 
@@ -257,7 +338,7 @@ def complex_fba(
     )
     d += e.Line(color="grey").right().length(1.5)
     d += e.Dot(color="grey").label(
-        f"$I_e$={(Ie * ureg.ampere):.1f~#P}", color="blue", loc="right"
+        f"\n $I_e$={(Ie * ureg.ampere):.1f~#P}", color="blue", loc="right"
     )
     d.push()
     d += (
@@ -307,7 +388,7 @@ def complex_fba(
     d += (
         e.Gap()
         .right()
-        .length(3)
+        .length(4)
         .label(
             "(intermediate) ${Z_{out}$" + f"\n{fba['izout']:.3f~S}",
             loc="right",
@@ -324,8 +405,23 @@ def complex_fba(
         .down()
     )
     d += e.Dot(color="grey")
-
     d.pop()
+
+    if Cce is not None:
+        d.push()
+        d += e.Line(color="grey").right().length(1.5)
+        d += (
+            e.Capacitor(color="grey")
+            .length(2)
+            .label(
+                "$C_{ce}$" + f"\n{(Cce * ureg.farads):.1f~#P}", color="blue", loc="bot"
+            )
+            .down()
+        )
+        d += e.Line(color="grey").left().length(1.5)
+        # d += e.Dot(color="grey")
+        d.pop()
+
     d += e.Line().up().length(1)
     d += e.Dot()
     d.push()
@@ -353,6 +449,7 @@ def complex_fba(
     d += e.Dot()
 
     d.pop()
+
     d += e.Line().right().length(6)
     d += e.Line().down().length(1)
     n1 = N
@@ -418,8 +515,8 @@ def complex_fba(
 
     display(d)
 
-    fba_res = {}
-    for f in np.logspace(3, math.log10(FT), num=200):
+    fba_res = {"Sarrs": []}
+    for f in np.logspace(plot_from_exp, plot_to_exp, num=200):
         fba = _calc_complex_fba(
             ZS=ZS,
             ZL=ZL,
@@ -427,14 +524,26 @@ def complex_fba(
             F=f,
             FT=FT,
             Rbp=Rbp,
+            extLin=extLin,
+            extCin=extCin,
             Ccb=Ccb,
+            Cce=Cce,
             Ie_mA=Ie_mA,
             Re=Re,
             Le=Le,
             Rf=Rf,
             Lf=Lf,
             Cf=Cf,
+            extLout=extLout,
             N=N,
+        )
+
+        # collate a list of S-param matrices for scikit-rf network
+        fba_res["Sarrs"].append(
+            [
+                [fba["S"].s11.c, fba["S"].s12.c],
+                [fba["S"].s21.c, fba["S"].s22.c],
+            ]
         )
 
         for f_k, f_i in fba.items():
@@ -443,7 +552,7 @@ def complex_fba(
             fba_res[f_k].append(f_i)
 
     fig = make_subplots(
-        rows=2,
+        rows=3,
         cols=4,
         subplot_titles=(
             "|Beta|",
@@ -454,6 +563,8 @@ def complex_fba(
             "Stern Stability [>1]",
             "I/P VSWR",
             "O/P VSWR",
+            "Insertion Gain dB",
+            "Rollett Stability",
         ),
         x_title="Frequency",
     )
@@ -519,6 +630,30 @@ def complex_fba(
         col=4,
     )
 
+    fig.add_trace(
+        go.Scatter(
+            x=fba_res["F"],
+            y=fba_res["insertion_gain_db"],
+            name="insertion gain db |S21|^2",
+        ),
+        row=3,
+        col=1,
+    )
+
+    rollett_colors = ["red" if v <= 1 else "blue" for v in fba_res["rollett_stability"]]
+    fig.add_trace(
+        go.Scatter(
+            x=fba_res["F"],
+            y=fba_res["rollett_stability"],
+            name="Rollett Stability",
+            mode="markers+lines",
+            marker={"color": rollett_colors, "size": 3},
+            line={"color": "grey"},
+        ),
+        row=3,
+        col=2,
+    )
+
     fig.add_vline(
         x=F,
         line_width=1,
@@ -526,7 +661,7 @@ def complex_fba(
         line_color="red",
     )
 
-    fig.update_layout(height=500, width=1400)
+    fig.update_layout(height=650, width=1400)
     fig.update_xaxes(type="log")
     fig.update_yaxes(type="log", row=2, col=1)
     fig.update_yaxes(type="log", row=2, col=2)
@@ -534,7 +669,52 @@ def complex_fba(
     fig.update_yaxes(type="log", row=2, col=4)
     fig.show()
 
-    return d
+    ntw = rf.Network(frequency=fba_res["F"], s=fba_res["Sarrs"])
+
+    fig2 = plt.figure(figsize=(12, 12))
+    ax11 = fig2.add_subplot(221)
+    ax12 = fig2.add_subplot(222, projection="polar")
+    ax21 = fig2.add_subplot(223, projection="polar")
+    ax22 = fig2.add_subplot(224)
+
+    def _annot_point(ax=None, x=None, y=None, f=None):
+        if "PolarAxes" in str(type(ax)):
+            c = Complex(complex(x, y))
+            p = c.as_polar()
+            theta = math.radians(p["angle"])
+            r = p["mag"]
+            ax.scatter(theta, r, marker='v', s=20, color="red")
+            ax.text(theta, r, f'{(f*ureg.hertz):.0f~#P}', fontsize=6, ha='center', va='bottom', color='red')
+        else:
+            ax.scatter(x, y, marker='v', s=20, color="red")
+            # ax.annotate(f'M', (x, y), xytext=(-7, 7), textcoords='offset points', color='red')
+            ax.text(x, y, f'{(f*ureg.hertz):.0f~#P}', fontsize=6, ha='center', va='bottom', color='red')
+
+    def _annot(ax=None, m=None, n=None, ntw=None):
+        f = ntw.frequency.f_scaled[0]
+        x = ntw.s.real[0, m, n]
+        y = ntw.s.imag[0, m, n]
+        _annot_point(ax, x, y, f)
+
+        f = ntw.frequency.f_scaled[-1]
+        x = ntw.s.real[-1, m, n]
+        y = ntw.s.imag[-1, m, n]
+        _annot_point(ax, x, y, f)
+
+    ntw.plot_s_smith(m=0, n=0, draw_labels=True, ax=ax11)
+    ntw.plot_s_polar(m=0, n=1, ax=ax12)
+    ntw.plot_s_polar(m=1, n=0, ax=ax21)
+    ntw.plot_s_smith(m=1, n=1, draw_labels=True, ax=ax22)
+    # print(ax12)
+
+    for p in ((ax11,0,0), (ax12,0,1), (ax21,1,0), (ax22,1,1)):
+        ax = p[0]
+        m = p[1]
+        n = p[2]
+        _annot(ax=ax, m=m, n=n, ntw=ntw)
+
+
+    return ntw
 
 
 res_series = E24
