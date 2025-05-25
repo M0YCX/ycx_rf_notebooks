@@ -1,15 +1,21 @@
 import math
+import numpy as np
 import pint
 import matplotlib.pyplot as plt
 import skrf as rf
 from skrf import Network, plotting
+from skrf.util import find_nearest_index
 from ycx_complex_numbers import Complex
 
 ureg = pint.UnitRegistry()
 ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 
-def plot_smith_annotated(frequency=None, s=None):
+def plot_smith_annotated(frequency=None, s=None, F=None):
     ntw = rf.Network(frequency=frequency, s=s)
+
+    nearest_f = None
+    if F is not None:
+        nearest_f = find_nearest_index(np.array(frequency), F)
 
     fig2 = plt.figure(figsize=(12, 12))
     ax11 = fig2.add_subplot(221)
@@ -17,14 +23,15 @@ def plot_smith_annotated(frequency=None, s=None):
     ax21 = fig2.add_subplot(223, projection="polar")
     ax22 = fig2.add_subplot(224)
 
-    def _annot_point(ax=None, x=None, y=None, f=None):
+    def _annot_point(ax=None, x=None, y=None, f=None, marker="o", color="red"):
         font_size = 8
+        marker_size=30 # 20
         if "PolarAxes" in str(type(ax)):
             c = Complex(complex(x, y))
             p = c.as_polar()
             theta = math.radians(p["angle"])
             r = p["mag"]
-            ax.scatter(theta, r, marker="v", s=20, color="red")
+            ax.scatter(theta, r, marker=marker, s=marker_size, color=color)
             ax.text(
                 theta,
                 r,
@@ -32,10 +39,10 @@ def plot_smith_annotated(frequency=None, s=None):
                 fontsize=font_size,
                 ha="center",
                 va="bottom",
-                color="red",
+                color=color,
             )
         else:
-            ax.scatter(x, y, marker="v", s=20, color="red")
+            ax.scatter(x, y, marker=marker, s=marker_size, color=color)
             # ax.annotate(f'M', (x, y), xytext=(-7, 7), textcoords='offset points', color='red')
             ax.text(
                 x,
@@ -44,7 +51,7 @@ def plot_smith_annotated(frequency=None, s=None):
                 fontsize=font_size,
                 ha="center",
                 va="bottom",
-                color="red",
+                color=color,
             )
 
     def _annot(ax=None, m=None, n=None, ntw=None):
@@ -57,6 +64,14 @@ def plot_smith_annotated(frequency=None, s=None):
         x = ntw.s.real[-1, m, n]
         y = ntw.s.imag[-1, m, n]
         _annot_point(ax, x, y, f)
+
+        if nearest_f is not None:
+            # annotate operating frequency
+            f = ntw.frequency.f_scaled[nearest_f]
+            x = ntw.s.real[nearest_f, m, n]
+            y = ntw.s.imag[nearest_f, m, n]
+            _annot_point(ax, x, y, f, marker="X")
+
 
     ntw.plot_s_smith(m=0, n=0, draw_labels=True, ax=ax11)
     ntw.plot_s_polar(m=0, n=1, ax=ax12)

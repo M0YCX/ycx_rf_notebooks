@@ -757,7 +757,7 @@ def complex_fba(
     fig.update_yaxes(type="log", row=2, col=4)
     fig.show()
 
-    ntw = plot_smith_annotated(frequency=fba_res["F"], s=fba_res["Sarrs"])
+    ntw = plot_smith_annotated(frequency=fba_res["F"], s=fba_res["Sarrs"], F=F)
 
     # fig2 = plt.figure(figsize=(12, 12))
     # ax11 = fig2.add_subplot(221)
