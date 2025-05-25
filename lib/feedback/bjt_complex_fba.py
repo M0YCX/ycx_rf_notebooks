@@ -285,7 +285,7 @@ def complex_fba(
     ZS = Z(ZS_real + (1j * ZS_imag))
     ZL = Z(ZL_real + (1j * ZL_imag))
 
-    instrinsic_color = "#8585b5"
+    intrinsic_color = "#8585b5"
     extrinsic_color = "#985858"
     feedback_color = "#589858"
 
@@ -376,26 +376,26 @@ def complex_fba(
             "$extL_b$" + f"\n{(extLb * ureg.henrys):.2f~#P}", color="blue", loc="bot"
         )
     )
-    d += e.Dot(open=True, color=instrinsic_color).label(
-        "b", color=instrinsic_color, loc="bot"
+    d += e.Dot(open=True, color=intrinsic_color).label(
+        "b", color=intrinsic_color, loc="bot"
     )
 
     d += (
-        e.Resistor(color=instrinsic_color)
+        e.Resistor(color=intrinsic_color)
         .right()
         .label(f"$R^`_b$\n{(Rbp * ureg.ohms):.1f~#P}", color="blue")
     )
-    d += e.Line(color=instrinsic_color).right().length(1.5)
-    d += e.Dot(color=instrinsic_color)
+    d += e.Line(color=intrinsic_color).right().length(1.5)
+    d += e.Dot(color=intrinsic_color)
     d.push()
     d += (
-        e.Resistor(color=instrinsic_color)
+        e.Resistor(color=intrinsic_color)
         .label("$r_e$" + f"={(fba['re'] * ureg.ohms):.1f~#P}", color="red", loc="top")
         .down()
         .length(2)
     )
-    d += e.Dot(open=True, color=instrinsic_color).label(
-        "e", loc="left", color=instrinsic_color
+    d += e.Dot(open=True, color=intrinsic_color).label(
+        "e", loc="left", color=intrinsic_color
     )
     d += (
         e.Inductor(color=extrinsic_color)
@@ -421,7 +421,7 @@ def complex_fba(
 
     d.pop()
     d += (
-        e.SourceControlledI(color=instrinsic_color)
+        e.SourceControlledI(color=intrinsic_color)
         .length(2)
         .reverse()
         .label(
@@ -430,8 +430,8 @@ def complex_fba(
             loc="bot",
         )
     )
-    d += e.Dot(open=True, color=instrinsic_color).label(
-        "c", loc="right", ofst=(0.1, 0.2), color=instrinsic_color
+    d += e.Dot(open=True, color=intrinsic_color).label(
+        "c", loc="right", ofst=(0.1, 0.2), color=intrinsic_color
     )
     if N != 1:
         d.push()
@@ -448,28 +448,28 @@ def complex_fba(
         )
         d.pop()
     d.push()
-    d += e.Line(color=instrinsic_color).left().length(1)
+    d += e.Line(color=intrinsic_color).left().length(1)
     d += (
-        e.Capacitor(color=instrinsic_color)
+        e.Capacitor(color=intrinsic_color)
         .length(2)
         .label("$C_{cb}$" + f"\n{(Ccb * ureg.farads):.1f~#P}", color="blue")
         .down()
     )
-    d += e.Dot(color=instrinsic_color)
+    d += e.Dot(color=intrinsic_color)
     d.pop()
 
     if Cce is not None:
         d.push()
-        d += e.Line(color=instrinsic_color).right().length(1.5)
+        d += e.Line(color=intrinsic_color).right().length(1.5)
         d += (
-            e.Capacitor(color=instrinsic_color)
+            e.Capacitor(color=intrinsic_color)
             .length(4)
             .label(
                 "$C_{ce}$" + f"\n{(Cce * ureg.farads):.1f~#P}", color="blue", loc="bot"
             )
             .down()
         )
-        d += e.Line(color=instrinsic_color).left().length(1.5)
+        d += e.Line(color=intrinsic_color).left().length(1.5)
         d.pop()
 
     d += (
@@ -579,6 +579,26 @@ def complex_fba(
     )
     d += e.Gap().right()  # make space on right for truncated ZL
 
+    # Legend
+    d += (
+        e.Line(arrow="o-|", color=intrinsic_color)
+        .length(2)
+        .at(xy=(22, -5))
+        .label("intrinsic", loc="right")
+    )
+    d += (
+        e.Line(arrow="o-|", color=extrinsic_color)
+        .length(2)
+        .at(xy=(22, -5.5))
+        .label("extrinsic", loc="right")
+    )
+    d += (
+        e.Line(arrow="o-|", color=feedback_color)
+        .length(2)
+        .at(xy=(22, -6))
+        .label("feedback", loc="right")
+    )
+
     display(d)
 
     fba_res = {"Sarrs": []}
@@ -667,7 +687,7 @@ def complex_fba(
             name="Linvill Stability",
             mode="markers+lines",
             marker={"color": colors, "size": 3},
-            line={"color": instrinsic_color},
+            line={"color": intrinsic_color},
         ),
         row=2,
         col=1,
@@ -681,7 +701,7 @@ def complex_fba(
             name="Stern Stability",
             mode="markers+lines",
             marker={"color": colors, "size": 3},
-            line={"color": instrinsic_color},
+            line={"color": intrinsic_color},
         ),
         row=2,
         col=2,
@@ -716,7 +736,7 @@ def complex_fba(
             name="Rollett Stability",
             mode="markers+lines",
             marker={"color": rollett_colors, "size": 3},
-            line={"color": instrinsic_color},
+            line={"color": intrinsic_color},
         ),
         row=3,
         col=2,
