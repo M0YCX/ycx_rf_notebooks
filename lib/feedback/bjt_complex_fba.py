@@ -9,9 +9,10 @@ import plotly.graph_objects as go
 import schemdraw as schem
 import schemdraw.elements as e
 import skrf as rf
+from string import Template
 from skrf import Network, plotting
 from eseries import E12, E24, E48, E96, erange
-from IPython.display import display
+from IPython.display import display, HTML
 from ipywidgets import Layout, interactive, GridBox, interactive_output
 from ycx_complex_numbers import Complex, Neta, Netb, NetY, NetZ, Y, Z
 from ycx_rf_amplifiers.y_params import calc_linvill_stability2, calc_stern_stability2
@@ -260,6 +261,7 @@ def complex_fba(
     N=2,
     from_mhz=None,
     to_mhz=None,
+    title=None,
 ):
     Ccb = Ccb_pF * 10**-12
     extLe = extLe_nH * 10**-9
@@ -301,6 +303,11 @@ def complex_fba(
         to_hz = to_mhz * 10**6
     plot_from_exp = math.log10(from_hz)
     plot_to_exp = math.log10(to_hz)
+
+    if title is not None:
+        t = Template(title)
+        ts = t.substitute(dict(Ie_mA=Ie_mA, F_mhz=F_mhz))
+        display(HTML(f"<h1>{ts}</h1>"))
 
     fba = _calc_complex_fba(
         ZS=ZS,

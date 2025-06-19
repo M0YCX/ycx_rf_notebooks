@@ -5,6 +5,7 @@ ziafont
 ziamath
 schemdraw
 eseries
+iec60063
 black
 plotly
 ipywidgets
