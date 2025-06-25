@@ -215,7 +215,7 @@ def draw_bjt_bias(
     )
 
     display(d)
-    return d
+    # return d
 
 
 res_series = E24
