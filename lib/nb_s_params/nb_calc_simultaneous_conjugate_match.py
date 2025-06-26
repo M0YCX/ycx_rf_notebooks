@@ -59,14 +59,14 @@ def nb_calc_simultaneous_conjugate_match(
     html += f'<tr><th colspan="{cols}" style="text-align:left;">Simultaneous Conjugate Match:</th>'
 
     gammaS = cj["gammaS"]
-    html += f'<tr style="border: 1px solid #b3b2b2"><td>$\Gamma_S$<td>{gammaS}</td>'
+    html += f'<tr style="border: 1px solid #b3b2b2"><td>$\\Gamma_S$<td>{gammaS}</td>'
     ZS = Z0 * (1 + gammaS) / (1 - gammaS)
     html += f"<tr><td>$Z_S$<td>{ZS}<td>$Z_0$ = {Z0}</td>"
     YS = Y(1 / ZS.c)
     html += f"<tr><td>$Y_S$<td>{YS}</td>"
 
     gammaL = cj["gammaL"]
-    html += f'<tr style="border: 1px solid #b3b2b2"><td>$\Gamma_L$<td>{gammaL}</td>'
+    html += f'<tr style="border: 1px solid #b3b2b2"><td>$\\Gamma_L$<td>{gammaL}</td>'
     ZL = Z0 * (1 + gammaL) / (1 - gammaL)
     html += f"<tr><td>$Z_L$<td>{ZL}<td>$Z_0$ = {Z0}</td>"
     YL = Y(1 / ZL.c)
@@ -83,8 +83,8 @@ def nb_calc_simultaneous_conjugate_match(
     fig = plt.figure(figsize=(6, 6))
     ax1 = fig.add_subplot(111)
     with style.context("seaborn-v0_8-ticks"):
-        plotting.plot_smith([(0+0j), gammaS.c], label="$\Gamma_S$", marker="x", lw=1, color="blue", show_legend=True, ax=ax1, draw_labels=True)
-        plotting.plot_smith([(0+0j), gammaL.c], label="$\Gamma_L$", marker="x", lw=1, color="green", show_legend=True, ax=ax1)
+        plotting.plot_smith([(0+0j), gammaS.c], label="$\\Gamma_S$", marker="x", lw=1, color="blue", show_legend=True, ax=ax1, draw_labels=True)
+        plotting.plot_smith([(0+0j), gammaL.c], label="$\\Gamma_L$", marker="x", lw=1, color="green", show_legend=True, ax=ax1)
         plt.show()
 
     return cj
