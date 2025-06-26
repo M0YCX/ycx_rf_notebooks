@@ -11,6 +11,9 @@ To run the Jupyter Lab service you will need to install:-
 * [Docker](https://docs.docker.com/engine/install/)
 * [Docker Compose](https://docs.docker.com/compose/install/)
 
+Alternatively see https://jupyterlab.readthedocs.io/en/stable/getting_started/overview.html,
+the prereq python libs for the notebooks are listed in `requirements.txt`.
+
 ## Startup the notebook service with docker compose
 
 ```
