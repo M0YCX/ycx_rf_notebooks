@@ -24,7 +24,6 @@ ureg = pint.UnitRegistry()
 
 
 def draw_CE_gndEmitter_simple_bias(
-    anno_stage="",
     vals=defaultdict(lambda: "?"),
     trans_type="npn",
 ):
@@ -36,7 +35,6 @@ def draw_CE_gndEmitter_simple_bias(
     d += el.Dot().label(f"$V^'_c$\n{vals['V_pc']}", loc="right", color="red")
     d.pop()
     d += el.Line().right().length(2.25)
-    # d += el.Line().length(0.5)
 
     arrow_d = "->"
     if trans_type == "npn":
@@ -119,20 +117,7 @@ def draw_CE_gndEmitter_simple_bias(
         .down()
         .label("$I_{R1}$" + f"\n{vals['I_R1']}", color="red", loc="top")
     )
-
     d += el.Gap().at(R2.start).right().length(2.5)
-    sat_msg = ""
-    # if vals["V_cb"] != "?" and vals["V_cb"].startswith("-"):
-    #     # sat_msg = "OK: Active Region"
-    #     # if vals["V_cb"].startswith("-"):
-    #     sat_msg = "WARNING: Saturation Region"
-    # d += el.Gap().down().length(1.5)
-    # d += (
-    #     el.Gap()
-    #     .down()
-    #     .length(2)
-    #     .label("$V_{cb}$\n" + f"{vals['V_cb']}\n{sat_msg}", color="red", loc="bot")
-    # )
 
     return d
 
@@ -146,7 +131,6 @@ def solve_CE_gndEmitter_simple_bias():
         Eq(V_c, V_pc - I_R2 * R_2),
         Eq(I_R1, (V_pc - Delta_V) / R_1),
         Eq(I_R2, beta * I_R1),
-        # Eq(I_R3, (V_cc - V_pc) / R_3),
         Eq(V_pc, V_cc - I_R3 * R_3),
         Eq(I_R3, I_R2 + I_R1),
         Eq(V_cb, V_c - Delta_V),
