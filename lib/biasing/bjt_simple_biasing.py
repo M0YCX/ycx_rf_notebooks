@@ -32,11 +32,11 @@ def draw_CE_gndEmitter_simple_bias(
 
     d.push()
     d += (R1 := el.Resistor().label(f"$R_1$\n{vals['R_1']}", color="blue")).up()
-    d += el.Line().length(2).right()
+    d += el.Line().length(3).right()
     d += el.Dot().label(f"$V^'_c$\n{vals['V_pc']}", loc="right", color="red")
     d.pop()
-    d += el.Line().right().length(0.75)
-    d += el.Line().length(0.5)
+    d += el.Line().right().length(2.25)
+    # d += el.Line().length(0.5)
 
     arrow_d = "->"
     if trans_type == "npn":
@@ -83,7 +83,16 @@ def draw_CE_gndEmitter_simple_bias(
         .linewidth(0.5)
         .at(TR1.emitter, dx=-0.2, dy=-0.2)
         .to(TR1.base, dx=-0.2, dy=-0.2)
-        .label("$\\Delta V$" + f"\n{vals['Delta_V']}", ofst=(-0.25, -0.25), fontsize=10)
+        .label("$\\Delta V$" + f"\n{vals['Delta_V']}", ofst=(-0.29, 0.25), fontsize=10)
+    )
+    d.pop()
+    d.push()
+    d += (
+        el.Arc2(arrow="<->", radius=0.6, color="red")
+        .linewidth(0.5)
+        .at(TR1.base, dx=-0.2, dy=0.2)
+        .to(TR1.collector, dx=-0.2, dy=0.2)
+        .label("$V_{cb}$" + f"\n{vals['V_cb']}", ofst=(-0.29, -0.25), fontsize=10)
     )
     d.pop()
     d += el.Line().length(0.5)
@@ -118,12 +127,12 @@ def draw_CE_gndEmitter_simple_bias(
     #     # if vals["V_cb"].startswith("-"):
     #     sat_msg = "WARNING: Saturation Region"
     # d += el.Gap().down().length(1.5)
-    d += (
-        el.Gap()
-        .down()
-        .length(2)
-        .label("$V_{cb}$\n" + f"{vals['V_cb']}\n{sat_msg}", color="red", loc="bot")
-    )
+    # d += (
+    #     el.Gap()
+    #     .down()
+    #     .length(2)
+    #     .label("$V_{cb}$\n" + f"{vals['V_cb']}\n{sat_msg}", color="red", loc="bot")
+    # )
 
     return d
 
@@ -137,16 +146,19 @@ def solve_CE_gndEmitter_simple_bias():
         Eq(V_c, V_pc - I_R2 * R_2),
         Eq(I_R1, (V_pc - Delta_V) / R_1),
         Eq(I_R2, beta * I_R1),
-        Eq(I_R3, (V_cc - V_pc) / R_3),
+        # Eq(I_R3, (V_cc - V_pc) / R_3),
         Eq(V_pc, V_cc - I_R3 * R_3),
         Eq(I_R3, I_R2 + I_R1),
         Eq(V_cb, V_c - Delta_V),
     ]
+    print(">>> system of equations >>>")
+    for e in eqs:
+        display(e)
 
     solve4 = (I_R1, I_R2, I_R3, V_pc, V_c, V_cb)
     res = solve(eqs, solve4, dict=True)[0]
 
-    print(f">>> Solved for {solve4} >>>")
+    print(f">>> Solved/expanded for {solve4} >>>")
     for s in solve4:
         display(f"{s}", Eq(s, res[s]))
 
