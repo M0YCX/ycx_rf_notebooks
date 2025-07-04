@@ -1,19 +1,10 @@
 import math
 import sys
 
-# %matplotlib inline
-# %matplotlib widget
-# %config InlineBackend.figure_format = 'svg'
-# import matplotlib_inline
 import mplcursors
 
-# matplotlib_inline.backend_inline.set_matplotlib_formats("svg")
-# import numpy as np
 import pint
 
-# import plotly.graph_objects as go
-# import skrf
-# import skrf as rf
 from IPython.display import HTML, display
 from matplotlib import pyplot as plt
 from matplotlib import style
@@ -22,20 +13,19 @@ from skrf import Network, plotting
 ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 sys.path.append("../../lib")
 
-from ycx_rf_amplifiers.s_params import  calc_stability_circles, constant_gain_circle, calc_circle
+from ycx_rf_amplifiers.s_params import (
+    calc_stability_circles,
+    constant_gain_circle,
+    calc_circle,
+)
 
-# from complex_params import Complex, S
 from ycx_complex_numbers import Complex, S
 
 
-# def calc_circle(c, r):
-#     theta = np.linspace(0, 2 * np.pi, 50)
-#     return c + r * np.exp(1.0j * theta)
-
-
-def nb_calc_stability_circles(s11, s22, s12, s21, gain_db=0, title="", Zi=50 + 0j, Zo=50 + 0j):
+def nb_calc_stability_circles(
+    s11, s22, s12, s21, gain_db=0, title="", Zi=50 + 0j, Zo=50 + 0j
+):
     stab_circles = calc_stability_circles(s11, s22, s12, s21)
-    # print(stab_circles)
     Ds = stab_circles["Ds"]
     K = stab_circles["K"]
     B1 = stab_circles["B1"]
@@ -132,36 +122,18 @@ def nb_calc_stability_circles(s11, s22, s12, s21, gain_db=0, title="", Zi=50 + 0
             + f"{cgc['Po']:.4f}"
             + '</td><td style="color:green;text-align:left">&#x274D;</td>'
         )
-        # html += "<tr><td>circle_points<td>" + f"{cgc['circle_points']}"
 
     html += "</table>"
     display(HTML(html))
 
-    # print(cs1)
     plt.ioff()
 
-    # def on_plot_hover(event):
-    #     print("in on_plot_hover")
-    #     # Iterating over each data member plotted
-    #     for curve in plot.get_lines():
-    #         # Searching which data member corresponds to current mouse position
-    #         if curve.contains(event)[0]:
-    #             print("over %s" % curve.get_gid())
-
     fig = plt.figure(figsize=(12, 8))
-    # fig = plt.figure(figsize=(10, 10), constrained_layout=True)
-    # fig.canvas.layout.width = "100%"
-    # fig.canvas.layout.height = "1900px"
-    # fig = plt.figure()
-    # fig.canvas.mpl_connect("motion_notify_event", on_plot_hover)
-    # fig = go.Figure()
     ax1 = fig.add_subplot(111)
     ax2 = fig.add_subplot(111, sharex=ax1, frameon=False)
     ax3 = fig.add_subplot(111, sharex=ax1, frameon=False)
 
     with style.context("seaborn-v0_8-ticks"):
-        # plotting.plot_smith(s21.c, marker="x", lw=2, color="black", ax=ax1)
-        # plotting.plot_smith(s, marker="o")
         plotting.plot_smith(
             cs1,
             show_legend=True,
@@ -199,22 +171,6 @@ def nb_calc_stability_circles(s11, s22, s12, s21, gain_db=0, title="", Zi=50 + 0
                 ax=ax2,
                 title="",
             )
-            # print(f"ax1={vars(ax1)}")
-            # for a in vars(fig).keys():
-            #     print(f"{a}={vars(fig)[a]}")
-            # print(f"_mouseover_set={vars(ax1._mouseover_set._od)}")
-            # print(f"ax1 children={ax1._children}")
-            # for child in ax1._children:
-            #     print(f"child={child}")
-            # # print(f"fig.patches={fig.patches}")
-            # print(f"traces={fig.select_traces()}")
-
-            # crs.connect(
-            #     "add",
-            #     lambda sel: sel.annotation.set_text(
-            #         f"$R_L$={Complex(sel.target[0] + (1j * sel.target[1]))}\n$R_S$="
-            #     ),
-            # )
             csr = mplcursors.cursor(ax2, hover=False)
 
             @csr.connect("add")
@@ -238,25 +194,4 @@ def nb_calc_stability_circles(s11, s22, s12, s21, gain_db=0, title="", Zi=50 + 0
                         f"$\\Gamma_L$={gammaL}, $Z_L$={zL:.4f}\n$\\Gamma_S$={gammaS}, $Z_S$={zS:.4f}\n(SimNEC: Use Conjugate of $Z_S$ & $Z_L$ for $Z$)"
                     )
 
-        # @csr.connect("remove")
-        # def on_remove(sel):
-        #     try:
-        #         gammaS = Complex(
-        #             s11.c + (s12.c * s21.c * gammaL.c) / (1 - (gammaL.c * s22.c))
-        #         ).as_conjugate()
-        #         plotting.plot_smith(gammaS.c, marker="o", lw=2, color="green", ax=ax1)
-        #     except Exception as e:
-        #         sel.annotation.set_text(f"{e}")
-
         plt.show()
-
-
-# gain_db = 12
-# s11 = S().from_polar(0.4, 280)
-# s22 = S().from_polar(0.78, 345)
-# s12 = S().from_polar(0.048, 65)
-# s21 = S().from_polar(5.4, 103)
-
-# stability_circles(
-#     s11, s22, s12, s21, gain_db, title="Book Example 2N5179 @200MHz [page: 153]"
-# )
