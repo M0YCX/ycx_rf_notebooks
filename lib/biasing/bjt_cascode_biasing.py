@@ -200,7 +200,11 @@ class BJTCascode:
             .label(
                 "$I_{e1}$"
                 + f"\n{(self.show_values['I_e1']*ureg.amperes):.3f~#P}"
-                + f"\n err:{(self.show_values['KCL_ie']*ureg.amperes):.1f~#P}",
+                + (
+                    f"\n err:{(self.show_values['KCL_ie']*ureg.amperes):.1f~#P}"
+                    if self.show_values["KCL_ie"] != 0
+                    else ""
+                ),
                 color="red",
                 loc="bot",
             )
@@ -260,14 +264,15 @@ class BJTCascode:
             color="red",
             loc="right",
         )
-        d.push()
-        d += (
-            e.Annotate(th1=45)
-            .delta(dx=-0.5, dy=0.5)
-            .label(f"$A$ err:{(self.show_values['KCL_A']*ureg.amperes):.1f~#P}")
-            .color("red")
-        )
-        d.pop()
+        if self.show_values["KCL_A"] != 0:
+            d.push()
+            d += (
+                e.Annotate(th1=45)
+                .delta(dx=-0.5, dy=0.5)
+                .label(f"$A$ err:{(self.show_values['KCL_A']*ureg.amperes):.1f~#P}")
+                .color("red")
+            )
+            d.pop()
         d.push()
         d += e.Resistor().label(
             f"$R_S$\n{(self.show_values['R_S']*ureg.ohm):.1f~#P}", color="blue"
@@ -324,14 +329,15 @@ class BJTCascode:
             )
         )
         d += e.Dot()
-        d.push()
-        d += (
-            e.Annotate(th1=45)
-            .delta(dx=-0.5, dy=0.5)
-            .label(f"$C$ err:{(self.show_values['KCL_C']*ureg.amperes):.1f~#P}")
-            .color("red")
-        )
-        d.pop()
+        if self.show_values["KCL_C"] != 0:
+            d.push()
+            d += (
+                e.Annotate(th1=45)
+                .delta(dx=-0.5, dy=0.5)
+                .label(f"$C$ err:{(self.show_values['KCL_C']*ureg.amperes):.1f~#P}")
+                .color("red")
+            )
+            d.pop()
         d += (
             e.Resistor()
             .down()
@@ -365,14 +371,15 @@ class BJTCascode:
         )
         d += e.Line().length(0.75)
         d += e.Dot()
-        d.push()
-        d += (
-            e.Annotate(th1=45)
-            .delta(dx=-0.5, dy=0.5)
-            .label(f"$B$ err:{(self.show_values['KCL_B']*ureg.amperes):.1f~#P}")
-            .color("red")
-        )
-        d.pop()
+        if self.show_values["KCL_B"] != 0:
+            d.push()
+            d += (
+                e.Annotate(th1=45)
+                .delta(dx=-0.5, dy=0.5)
+                .label(f"$B$ err:{(self.show_values['KCL_B']*ureg.amperes):.1f~#P}")
+                .color("red")
+            )
+            d.pop()
         d += e.Line().length(2).color("grey")
         d += e.Capacitor().color("grey").down().length(1)
         d += e.Ground().color("grey")
