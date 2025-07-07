@@ -1,20 +1,13 @@
 import math
 from collections import defaultdict
 
-# import ipywidgets as widgets
 import pint
-
 import plotly.io as pio
 import schemdraw as schem
 import schemdraw.elements as e
 
-# import texttable as tt
-# from eseries import E12, E24, E48, E96, erange
 from IPython.display import HTML, display
 from sympy import *
-
-# %matplotlib inline
-# %config InlineBackend.figure_format = 'svg'
 
 # Support rendering plots in github
 pio.renderers.default = "jupyterlab+png"
@@ -48,7 +41,6 @@ class BJTCascode:
         RS=0,
         RC=0,
         RE=0,
-        # temp_kelvin=290,
         draw=True,
     ):
         self.Vcc = Vcc
@@ -62,9 +54,6 @@ class BJTCascode:
         self.RS = RS
         self.RC = RC
         self.RE = RE
-
-        # self.temp_kelvin = temp_kelvin
-        # self.thermal_voltage = self.k * self.temp_kelvin / self.q
 
         # To be calculated
         self.Ibias = 0
@@ -103,10 +92,8 @@ class BJTCascode:
         for s in self.solve4:
             if s in self.res:
                 ans = self.res[s].subs(values)
-                # display(s, ans)
 
                 try:
-                    # str_val = f"{float(ans):.3f}"
                     self.show_values[f"{s}"] = float(ans)
                 except TypeError as e:
                     print(f"{s}: {e}")
@@ -205,7 +192,6 @@ class BJTCascode:
 
         d += (
             e.Resistor()
-            # .at(Q1.emitter)
             .down()
             .label(
                 f"$R_E$\n{(self.show_values['R_E']*ureg.ohm):.1f~#P}",
@@ -283,11 +269,9 @@ class BJTCascode:
         )
         d.pop()
         d.push()
-        # d.push()
         d += e.Resistor().label(
             f"$R_S$\n{(self.show_values['R_S']*ureg.ohm):.1f~#P}", color="blue"
         )
-        # d.pop()
         d += (
             e.Line()
             .right()
@@ -427,9 +411,8 @@ class BJTCascode:
             I_r1,
             I_r2,
             I_r3,
-            # alpha,
         ) = symbols(
-            "I_bias I_c I_b1 I_b2 I_c2 I_e1 I_e2 V_b1 V_b2 V_c1 V_c2 V_cp2 V_e1 I_r1 I_r2 I_r3"  # alpha
+            "I_bias I_c I_b1 I_b2 I_c2 I_e1 I_e2 V_b1 V_b2 V_c1 V_c2 V_cp2 V_e1 I_r1 I_r2 I_r3"
         )
 
         # System of simultaneous equations
@@ -475,8 +458,6 @@ class BJTCascode:
             # Eq(V_c2, V_cp2 - I_c2 * R_C ),   wont solve, see calc() above
         )
         # fmt:on
-        # for eq in self.eqs:
-        #     display(eq)
         self.solve4 = (
             V_cp2,
             I_b1,
