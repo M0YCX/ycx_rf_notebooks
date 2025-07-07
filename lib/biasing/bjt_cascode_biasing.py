@@ -24,7 +24,7 @@ schem.config(fontsize=10)
 ureg = pint.UnitRegistry()
 
 
-class Cascode:
+class BJTCascode:
     # Boltzmann's constant
     k = 1.38 * 10**-23  # joules/kelvin
 
@@ -48,7 +48,8 @@ class Cascode:
         RS=0,
         RC=0,
         RE=0,
-        temp_kelvin=290,
+        # temp_kelvin=290,
+        draw=True,
     ):
         self.Vcc = Vcc
         self.delta_v1 = delta_v1
@@ -62,8 +63,8 @@ class Cascode:
         self.RC = RC
         self.RE = RE
 
-        self.temp_kelvin = temp_kelvin
-        self.thermal_voltage = self.k * self.temp_kelvin / self.q
+        # self.temp_kelvin = temp_kelvin
+        # self.thermal_voltage = self.k * self.temp_kelvin / self.q
 
         # To be calculated
         self.Ibias = 0
@@ -144,6 +145,8 @@ class Cascode:
             ),
             17,
         )
+        if draw:
+            self.draw()
 
     def __repr__(self):
         return f"Cascode(\n" + f"\n)"
