@@ -66,6 +66,7 @@ def draw_bjt_bias(
     if Vb > Vc:
         vb_alert = "$V_b$ MUST be less than $V_c$!!!"
 
+    schem.config(inches_per_unit=0.4, fontsize=10)
     d = schem.Drawing()
 
     d += e.GroundChassis()
@@ -169,7 +170,7 @@ def draw_bjt_bias(
         .linewidth(0.5)
         .at(TR1.emitter, dx=-0.2, dy=-0.2)
         .to(TR1.base, dx=-0.2, dy=-0.2)
-        .label("$\\Delta V$" + f"\n{(Vdelta * ureg.volts):~#P}", ofst=(-0.25, -0.25))
+        .label("$\\Delta V$" + f"\n{(Vdelta * ureg.volts):~#P}", ofst=(-0.25, -0.25), fontsize=10)
     )
     d.pop()
     d += e.Line().right().length(1.5)

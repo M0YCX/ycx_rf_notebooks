@@ -869,6 +869,7 @@ Re = widgets.SelectionSlider(
     + list(erange(res_series, 1, 1000.0)),
     style=style,
     layout=Layout(width="auto", grid_area="Re"),
+    continuous_update=False,
 )
 extLe_nH = widgets.FloatText(
     value=10.0,
@@ -888,6 +889,7 @@ Cf_pF = widgets.SelectionSlider(
     options=list(erange(res_series, 1, 10000.0)),
     style=style,
     layout=Layout(width="auto", grid_area="Cf_pF"),
+    continuous_update=False,
 )
 Lf_nH = widgets.SelectionSlider(
     value=20.0,
@@ -895,6 +897,7 @@ Lf_nH = widgets.SelectionSlider(
     description="$Lf$ nH",
     style=style,
     layout=Layout(width="auto", grid_area="Lf_nH"),
+    continuous_update=False,
 )
 Rf = widgets.SelectionSlider(
     value=1000,
@@ -902,6 +905,7 @@ Rf = widgets.SelectionSlider(
     options=list(erange(res_series, 1, 100000.0)),
     style=style,
     layout=Layout(width="auto", grid_area="Rf"),
+    continuous_update=False,
 )
 ZS_real = widgets.FloatText(
     value=50,
@@ -933,7 +937,7 @@ N = widgets.SelectionSlider(
     description="$N$",
     style=style,
     layout=Layout(width="auto", grid_area="N"),
-    continuous_update=True,
+    continuous_update=False,
 )
 g1 = GridBox(
     children=[
