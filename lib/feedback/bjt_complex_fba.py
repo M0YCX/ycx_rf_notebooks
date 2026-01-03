@@ -55,6 +55,8 @@ def _calc_complex_fba(
     extCout=None,
     extCrev=None,
     N=None,
+    Cin=None,
+    Cout=None,
 ):
     """
     Params:
@@ -78,6 +80,8 @@ def _calc_complex_fba(
         extCout - Output parallel capacitance (extrinsic),
         extCrev - Reverse capacitance (extrinsic),
         N       - Ideal transformer turns ratio,
+        Cin     - Input coupling capacitance,
+        Cout    - Output coupling capacitance.
     """
     YS = Y(1 / ZS)
     YL = Y(1 / ZL)
@@ -144,6 +148,10 @@ def _calc_complex_fba(
     Yf = NetY(y11=1 / Zf, y12=-1 / Zf, y21=-1 / Zf, y22=1 / Zf)
     Ywith_feedback = YAwith_extrinsic + Yf
 
+    # add serial Cin at input
+    ACin = Neta(a11=1, a12=1 / (jw * Cin), a21=0, a22=1)
+    Ywith_feedback = (ACin @ Ywith_feedback.to_a()).to_Y()
+
     ##########
     # Get interim output impedance to match Wes's Zout
     izout = Z(1 / Ywith_feedback.in_out(ys=1 / ZS, yl=1 / ZL)["Yout"])
@@ -155,7 +163,10 @@ def _calc_complex_fba(
         ATR1 = Neta(a11=N, a12=0, a21=0, a22=1 / N)
     else:
         ATR1 = Neta(a11=1 / abs(N), a12=0, a21=0, a22=abs(N))
-    Y1 = (Ywith_feedback.to_a() @ ATR1).to_Y()
+    # add serial Cout at input
+    ACout = Neta(a11=1, a12=1 / (jw * Cout), a21=0, a22=1)
+
+    Y1 = (Ywith_feedback.to_a() @ ATR1 @ ACout).to_Y()
     S1 = Y1.to_S()
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
@@ -249,6 +260,8 @@ def complex_fba(
     Ccb_pF=5,
     Cce_pF=0,
     Cf_pF=10000,
+    Cin_pF=100000,
+    Cout_pF=100000,
     Lf_nH=20,
     Rf=1000,
     ZS_real=50,
@@ -271,6 +284,9 @@ def complex_fba(
 
     Cf = Cf_pF * 10**-12
     Lf = Lf_nH * 10**-9
+
+    Cin = Cin_pF * 10**-12
+    Cout = Cout_pF * 10**-12
 
     Cce = None
     if Cce_pF != 0:
@@ -330,6 +346,8 @@ def complex_fba(
         extCout=extCout,
         extCrev=extCrev,
         N=N,
+        Cin=Cin,
+        Cout=Cout,
     )
 
     schem.config(inches_per_unit=0.4, fontsize=10)
@@ -362,7 +380,14 @@ def complex_fba(
     d += e.SourceSin().label("$V_{in}$", loc="top").down().length(2)
     d += e.GroundChassis()
     d.pop()
-    d += e.Line().right().length(5)
+    # d += e.Line().right().length(5)
+    d += (
+        e.Capacitor()
+        .label("$C_{in}$" + f"\n{(Cin * ureg.farads):.1f~#P}", color="blue")
+        .right()
+        .length(3)
+    )
+    d += e.Line().right().length(2)
 
     d.push()
     d += e.Dot(color=extrinsic_color)
@@ -572,7 +597,15 @@ def complex_fba(
         )
     )
 
-    d += e.Line().at(TR1.s2).right().length(5)
+    d += e.Line().at(TR1.s2).right().length(1)
+    d += (
+        e.Capacitor()
+        .label("$C_{out}$" + f"\n{(Cout * ureg.farads):.1f~#P}", color="blue")
+        .right()
+        .length(3)
+    )
+    d += e.Line().length(1)
+
     d += (
         e.Resistor()
         .label("$Z_L$" + f"\n{ZL.as_complex()}", loc="bot", color="blue")
@@ -631,6 +664,8 @@ def complex_fba(
             extCout=extCout,
             extCrev=extCrev,
             N=N,
+            Cin=Cin,
+            Cout=Cout,
         )
 
         # collate a list of S-param matrices for scikit-rf network
@@ -939,6 +974,18 @@ N = widgets.SelectionSlider(
     layout=Layout(width="auto", grid_area="N"),
     continuous_update=False,
 )
+Cin_pF = widgets.FloatText(
+    value=100000.0,
+    description="$C_{in}$ pF",
+    style=style,
+    layout=Layout(width="auto", grid_area="Cin_pF"),
+)
+Cout_pF = widgets.FloatText(
+    value=100000.0,
+    description="$C_{out}$ pF",
+    style=style,
+    layout=Layout(width="auto", grid_area="Cout_pF"),
+)
 g1 = GridBox(
     children=[
         F_mhz,
@@ -957,6 +1004,8 @@ g1 = GridBox(
         ZL_real,
         ZL_imag,
         N,
+        Cin_pF,
+        Cout_pF,
     ],
     layout=Layout(
         width="100%",
@@ -968,6 +1017,7 @@ g1 = GridBox(
             "Ccb_pF Cf_pF Cf_pF Lf_nH"
             "Rf Rf ZS_real ZS_imag"
             "ZL_real ZL_imag N N"
+            "Cin_pF Cin_pF Cout_pF Cout_pF"
             """,
     ),
 )
@@ -994,6 +1044,8 @@ interactive_complex_fba = (
             "ZL_real": ZL_real,
             "ZL_imag": ZL_imag,
             "N": N,
+            "Cin_pF": Cin_pF,
+            "Cout_pF": Cout_pF,
         },
     ),
 )
