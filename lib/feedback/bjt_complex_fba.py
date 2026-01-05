@@ -167,7 +167,7 @@ def _calc_complex_fba(
     ACout = Neta(a11=1, a12=1 / (jw * Cout), a21=0, a22=1)
 
     Y1 = (Ywith_feedback.to_a() @ ATR1 @ ACout).to_Y()
-    S1 = Y1.to_S()
+    S1 = Y1.to_S(Z0=[ZS, ZL])
 
     yio = Y1.in_out(ys=1 / ZS, yl=1 / ZL)
     zin = Z(1 / yio["Yin"])

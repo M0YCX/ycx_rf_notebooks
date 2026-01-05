@@ -10,8 +10,11 @@ from ycx_complex_numbers import Complex
 ureg = pint.UnitRegistry()
 ureg = pint.UnitRegistry(autoconvert_offset_to_baseunit=True)
 
-def plot_smith_annotated(frequency=None, s=None, F=None):
-    ntw = rf.Network(frequency=frequency, s=s)
+def plot_smith_annotated(frequency=None, s=None, F=None, Zin=50+0j, Zout=50+0j):
+    # print(f"s:{s}")
+    ntw = rf.Network(frequency=frequency, s=s, z0=[Zin, Zout])
+    # print(f"ntw: {ntw}")
+    # ntw.plot_s_db()
 
     nearest_f = None
     if F is not None:
@@ -72,7 +75,7 @@ def plot_smith_annotated(frequency=None, s=None, F=None):
             y = ntw.s.imag[nearest_f, m, n]
             _annot_point(ax, x, y, f, marker="X")
 
-
+    # print(f"s[] at {nearest_f}: {ntw.s[nearest_f]}")
     ntw.plot_s_smith(m=0, n=0, draw_labels=True, ax=ax11)
     ntw.plot_s_polar(m=0, n=1, ax=ax12)
     ntw.plot_s_polar(m=1, n=0, ax=ax21)
