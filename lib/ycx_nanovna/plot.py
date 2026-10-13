@@ -74,13 +74,14 @@ def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50
     ax4.plot(f, zout, label="$|Z_{out}|$")
     ax4.legend()
 
-    ax5.set_title(f"VSWR [$Z_{{S}}={ZS}\\Omega$, $Z_{{L}}={ZL}\\Omega$]: 4:1")
-    ax5.set_xscale("log")
-    ax5.set_ylabel("VSWR")
-    ax5.set_xlabel("$F_{Hz}$")
-    ax5.plot(f, vswr_in, label="$VSWR_{in}$")
-    ax5.plot(f, vswr_out, label="$VSWR_{out}$")
-    ax5.legend()
+    n.plot_s_deg(m=0, n=0, ax=ax5)
+    n.plot_s_deg(m=1, n=0, ax=ax5)
 
-    n.plot_s_deg(m=0, n=0, ax=ax6)
-    n.plot_s_deg(m=1, n=0, ax=ax6)
+    ax6.set_title(f"VSWR [$Z_{{S}}={ZS}\\Omega$, $Z_{{L}}={ZL}\\Omega$]: 4:1")
+    ax6.set_xscale("log")
+    ax6.set_ylabel("VSWR")
+    ax6.set_xlabel("$F_{Hz}$")
+    ax6.plot(f, vswr_in, label="$VSWR_{in}$")
+    ax6.plot(f, vswr_out, label="$VSWR_{out}$")
+    ax6.legend()
+
