@@ -4,7 +4,7 @@ import skrf as rf
 from matplotlib import pyplot as plt
 from skrf import Network
 
-def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50+0j, ZL=50+0j, n=None):
+def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50+0j, ZL=50+0j, n=None, xscale="log"):
     assert n is not None or touchstone_fileprefix is not None, "Either n (Network) or touchstone_fileprefix must be specified"
     # ZS = 200 + 0j
     # ZL = 50 + 0j
@@ -20,7 +20,7 @@ def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50
 
     ax2 = fig.add_subplot(322)
     ax2.grid()
-    ax2.set_xscale("log")
+    ax2.set_xscale(xscale)
 
     ax3 = fig.add_subplot(323, projection="polar")
     ax3.set_ylim((0, 1))
@@ -30,11 +30,11 @@ def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50
 
     ax5 = fig.add_subplot(325)
     ax5.grid()
-    ax5.set_xscale("log")
+    ax5.set_xscale(xscale)
 
     ax6 = fig.add_subplot(326)
     ax6.grid()
-    ax6.set_xscale("log")
+    ax6.set_xscale(xscale)
 
     rf.plotting.smith(ax=ax1, draw_labels=True, ref_imm=50.0, chart_type="z")
     n.plot_s_smith(m=0, n=0, ax=ax1, lw=2)
@@ -67,7 +67,7 @@ def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50
         vswr_out.append((1 + abs(gamma_out)) / (1 - abs(gamma_out)))
 
     ax4.set_title(f"Impedance [$Z_{{S}}={ZS}\\Omega$, $Z_{{L}}={ZL}\\Omega$]: 4:1")
-    ax4.set_xscale("log")
+    ax4.set_xscale(xscale)
     ax4.set_ylabel("|Z|")
     ax4.set_xlabel("$F_{Hz}$")
     ax4.plot(f, zin, label="$|Z_{in}|$")
@@ -78,7 +78,7 @@ def plot_s2p_3x2(touchstone_fileprefix=None, touchstone_filesuffix="s2p",  ZS=50
     n.plot_s_deg(m=1, n=0, ax=ax5)
 
     ax6.set_title(f"VSWR [$Z_{{S}}={ZS}\\Omega$, $Z_{{L}}={ZL}\\Omega$]: 4:1")
-    ax6.set_xscale("log")
+    ax6.set_xscale(xscale)
     ax6.set_ylabel("VSWR")
     ax6.set_xlabel("$F_{Hz}$")
     ax6.plot(f, vswr_in, label="$VSWR_{in}$")
